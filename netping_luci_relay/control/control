@@ -1,0 +1,9 @@
+Package: luci-netping-relay
+Version: 1.0.0
+Depends: luci, luci-compat
+Architecture: all
+Maintainer: Anton Gavrilyuk <amigoalt@gmail.com>
+Section: net
+Priority: optional
+Description: Relay manager for DKST 708 device.
+Source: https://github.com/Netping/netping_luci_relay

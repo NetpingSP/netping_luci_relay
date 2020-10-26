@@ -1,0 +1,58 @@
+<%+netping_luci_relay/css%>
+<%+netping_luci_relay/js%>
+<%
+	local config = "settings"
+	local uci = require "luci.model.uci".cursor()
+	local util = require "luci.util"
+	
+	local relays = uci:get_all(config)
+	local i = 1
+%> 
+<div id="view">
+	<h2 name="content">Управление реле</h2>
+	<div class="cbi-map-descr">В данной таблице приведены локаьные и удалённые  реле. Вы можете добавить, переименовать, переключить реле. Локальные реле удалить невозможно, т.к. они встроены в устройство.</div>
+	<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
+		value="Добавить реле"
+		name="add" />
+
+	<div class="table">
+		<div class="tr table-titles">
+			<div class="th" style="width: 100%;">Памятка</div>
+			<div class="th">Тип</div>
+			<div class="th">Состояние</div>
+			<div class="th center nowrap cbi-section-actions">Управление</div>
+		</div>
+		<% for k, v in util.kspairs(relays) do %>
+			<div class="tr cbi-rowstyle-<%=i%>">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text" onblur="button_action(this)" 
+					value="<%=v.name%>"
+					data-relay="<%=k%>"
+					name="rename" />
+				</div>
+				<div class="td" data-title="Тип">
+					<% if v.embedded == "1" then write("Локально") else write("Удалённо") end %>
+				</div>
+				<div class="td" data-title="Состояние">
+					<% if v.state == "1" then write("ВКЛ") else write("Выкл") end %>
+				</div>
+				<div class="center nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
+						value="Переключить"
+						name="switch"
+						data-relay="<%=k%>" 
+						style="display: initial;" />
+					<% if v.embedded == "0" then %>
+					<input type="button" class="cbi-button cbi-button-reset" onclick="button_action(this)"
+						value="Удалить"
+						name="delete"
+						data-relay="<%=k%>"
+						style="display: initial;" />
+					<% end %>
+				</div>
+			</div>
+			<% i = (i%2) + 1 %>
+		<% end%>
+	</div>
+</div>
+<span id="btn_enable_spinner" class="btn_spinner"></span>

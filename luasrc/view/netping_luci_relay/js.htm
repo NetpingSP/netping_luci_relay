@@ -1,0 +1,37 @@
+<script type="text/javascript">
+//<![CDATA[
+ function button_action(btn) {
+	var xhr = new XHR(false);
+	var btn_spinner = document.getElementById("btn_enable_spinner");;
+	// получаем название команды, входное данное и id реле
+	var action = btn.name || "0",
+		relay = btn.getAttribute("data-relay") || "0",
+		// для команды "rename" входное данное берём из <input type=text value>
+		// для других команд - из <input type=button data-payload>
+		payload = (action == "rename")? btn.value : btn.getAttribute("data-payload") || "0";
+
+	btn.disabled = true;
+	spinner(btn_spinner, 1);
+	xhr.get('<%=luci.dispatcher.build_url("admin", "system", "relay", "action")%>/'+ '%h/%h/%h'.format(action, payload, relay) , null,
+		function (x) {
+			if (!x) {
+				return;
+			}
+			btn.disabled = false;
+			spinner(btn_spinner, 0);
+			location.assign('<%=luci.dispatcher.build_url("admin", "system", "relay")%>');
+	});
+}
+
+function spinner(element, state) {
+	if (state === 1) {
+		element.style.width = "16px";
+		element.innerHTML = '<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" width="16" height="16" style="vertical-align:middle" />';
+	}
+	else {
+		element.style.width = "0px";
+		element.innerHTML = '';
+	}
+}
+//]]>
+</script>

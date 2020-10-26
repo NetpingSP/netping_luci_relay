@@ -1,0 +1,21 @@
+
+config relay
+	option name 'Relay 1'
+	option embedded '1'
+	option state '0'
+
+config relay
+	option embedded '1'
+	option state '0'
+	option name 'Relay 2'
+
+config relay
+	option embedded '1'
+	option name 'Relay 3 '
+	option state '0'
+
+config relay
+	option state '0'
+	option embedded '1'
+	option name 'Relay 4'
+
