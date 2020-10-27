@@ -1,11 +1,16 @@
 <%+netping_luci_relay/css%>
 <%+netping_luci_relay/js%>
+<%+netping_luci_relay/modal%>
+
 <%
 	local config = "settings"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 	
 	local relays = uci:get_all(config)
+	-- remove from iterating non-relay types
+	relays["globals"] = nil
+	relays["prototype"] = nil
 	local i = 1
 %> 
 <div id="view">
@@ -13,7 +18,7 @@
 	<div class="cbi-map-descr">В данной таблице приведены локаьные и удалённые  реле. Вы можете добавить, переименовать, переключить реле. Локальные реле удалить невозможно, т.к. они встроены в устройство.</div>
 	<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
 		value="Добавить реле"
-		name="add" />
+		data-action="add" />
 
 	<div class="table">
 		<div class="tr table-titles">
@@ -28,7 +33,7 @@
 					<input type="text" onblur="button_action(this)" 
 					value="<%=v.name%>"
 					data-relay="<%=k%>"
-					name="rename" />
+					data-action="rename"/>
 				</div>
 				<div class="td" data-title="Тип">
 					<% if v.embedded == "1" then write("Локально") else write("Удалённо") end %>
@@ -39,13 +44,20 @@
 				<div class="center nowrap cbi-section-actions td">
 					<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
 						value="Переключить"
-						name="switch"
+						data-action="switch"
 						data-relay="<%=k%>" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="<%=k%>" 
+						data-protocol="<%=v.proto%>" 
+						data-embedded="<%=v.embedded%>" 
 						style="display: initial;" />
 					<% if v.embedded == "0" then %>
 					<input type="button" class="cbi-button cbi-button-reset" onclick="button_action(this)"
 						value="Удалить"
-						name="delete"
+						data-action="delete"
 						data-relay="<%=k%>"
 						style="display: initial;" />
 					<% end %>

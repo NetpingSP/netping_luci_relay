@@ -1,0 +1,54 @@
+<%
+	local config = "settings"
+	local uci = require "luci.model.uci".cursor()
+	local util = require "luci.util"
+	local globals = uci:get_all(config, "globals")
+	util.dumptable(globals)
+%>
+<script type="text/javascript">
+//<![CDATA[
+function edit_relay(btn) {
+	var relay_data = {
+		protocol: btn.getAttribute("data-protocol") || null,
+		embedded: (btn.getAttribute("data-embedded") == 1) ? true : false || false
+		// TODO дополнить объект данными о реле (согласно ТЗ)
+	}
+
+	L.require("ui").then(function(ui){
+		L.require("uci").then(function(uci) {
+			uci.load("settings").then(function(out){
+				var globals = uci.get("settings", "globals"),
+					protos = {};
+				
+				// Protocol dropdown data				
+				globals["proto"].forEach(function(p) {
+					protos[p.split(".")[0]] = p.split(".")[1];
+				})
+				proto_dropdown = new ui.Dropdown(relay_data["protocol"], protos, {
+					disabled: relay_data["embedded"]
+				}).render();
+
+				// Open modal
+				L.showModal('Редактировать реле', [
+					proto_dropdown,
+					E('div', { class: 'right' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Отмена')),
+						' ',
+						E('div', Object.assign(relay_data, { 
+							class: 'btn success', 
+							"name": "apply",
+							click: handleEdit(event)
+						}), _('Применить изменения'))
+					])
+				]);
+			})	
+		})
+	})
+}
+function handleEdit(event) {
+	return function() {
+		button_action(event.target)
+	}
+}
+//]]>
+</script>
