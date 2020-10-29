@@ -57,15 +57,28 @@ function rename_relay(inp) {
 		})
 	})
 }
+// It is required to handle "Enter" key while editing Relay name
+// This function disable general form submit from Enter pressing
+window.addEventListener('keydown',function(e) {
+	if(e.target.getAttribute("name") == "relay_name") {
+		if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13) {
+			if(e.target.nodeName=='INPUT'&&e.target.type=='text') { 
+				e.preventDefault();
+				rename_relay(e.target)
+				return false;
+			}
+		}
+	}
+},true);
 
 function reset_error_style(inp) {
-	console.log(inp.event)
 	var relay_id = inp.getAttribute("data-relay");
 	var tooltip = document.getElementById(relay_id);
 		tooltip.style.display = "none";
 		inp.classList.remove("cbi-input-invalid");
 }
 
+/*
  function button_action_(btn) {
 	var action = btn.getAttribute("data-action") || "0",
 		relay = btn.getAttribute("data-relay") || "0",
@@ -88,6 +101,7 @@ function reset_error_style(inp) {
 			location.assign('<%=luci.dispatcher.build_url("admin", "system", "relay")%>');
 	});
 }
+*/
 
 function spinner(element, state) {
 	if (state === 1) {
