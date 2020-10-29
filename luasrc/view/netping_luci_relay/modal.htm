@@ -33,48 +33,53 @@ function edit_relay(btn) {
 					relay_data = uci.get("settings", relay_id),
 					embedded = relay_data["embedded"] == '1' ? true : false
 
-				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { disabled: embedded, sort: true });
+				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 
+					disabled: embedded, 
+					sort: true });
+
 				var state_on_term = new ui.Textfield(globals("state")["1"], { 
-					maxlength: 24,
 					optional: false,
 					datatype: "rangelength(2,24)" });
+
 				var state_off_term = new ui.Textfield(globals("state")["0"], { 
 					optional: false,
-					maxlength: 24,
 					datatype: "rangelength(2,24)" });
+
+				// Make dropdown for settings.relay.number = 1..16
 				var maxn = globals_data["relay_max_number"] || '0'
-				var rnums = {0: 0}
+				var rnums = {1: 1}
 				for (var i=1; i <= parseInt(maxn, 10); i++) {
 					rnums[i] = i
 				}
 				var relay_number = new ui.Dropdown(relay_data["number"], rnums, { disabled: embedded, sort: false });
+
 				var dest_addr = new ui.Textfield(relay_data["dest_addr"], { 
 					maxlength: 128, 
 					disabled: embedded,
 					datatype: "host" });
+
 				var dest_port = new ui.Textfield(relay_data["dest_port"], { 
-					maxlength: 4, 
 					disabled: embedded,
 					datatype: "port" });
+
 				var restart_time = new ui.Textfield(relay_data["restart_time"], { 
 					maxlength: 3, 
 					datatype: "uinteger" });
 
 				var login = new ui.Textfield(relay_data["login"], { 
-					maxlength: 12, disabled: embedded, 
-					datatype: "minlength(3)"
+					disabled: embedded, 
+					datatype: "rangelength(3,8)"
 				});
 
 				var password = new ui.Textfield(relay_data["password"], { 
-					maxlength: 12, 
 					disabled: embedded, 
 					password: true,
 					datatype: "rangelength(4,16)" });
 
 
 				// Open modal
-				L.showModal('Редактировать реле', [
-					E('div', { class: 'cbi-map' }, [
+				L.showModal('Редактировать реле "' + relay_data["name"] +'"', [
+					E('div', { class: 'cbi-map', 'style': "margin-top: 1em;" }, [
 						E('div', { class: 'cbi-map-section' }, [
 							E('div', { class: 'cbi-map-section-node' }, [
 								E('div', { class: 'cbi-value' }, [

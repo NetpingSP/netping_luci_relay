@@ -1,30 +1,32 @@
 <script type="text/javascript">
 //<![CDATA[
 function add_relay() {
-	var action = "add"
+	var action = "add",
 		relay_id = null,
 		payload = {"relay_data": {}, "globals_data": {}};
 	send_action(action, relay_id, payload);
 }
 
 function delete_relay(btn) {
-	var action = "delete"
+	var action = "delete",
 		relay_id = btn.getAttribute("data-relay"),
 		payload = {"relay_data": {}, "globals_data": {}};
 	send_action(action, relay_id, payload);
 }
 
 function switch_relay(btn) {
-	var action = "switch"
+	var action = "switch",
 		relay_id = btn.getAttribute("data-relay"),
 		payload = {"relay_data": {}, "globals_data": {}};
 	send_action(action, relay_id, payload);
 }
 
 function rename_relay(inp) {
-	var action = "rename"
+	var action = "rename",
 		relay_id = inp.getAttribute("data-relay"),
-		new_name = inp.value;
+		new_name = inp.value,
+		payload = {};
+
 
 	L.require("uci").then(function(uci) {
 		uci.load("settings").then(function(out){
@@ -48,70 +50,14 @@ function rename_relay(inp) {
 			if(!found) {
 				// DO RENAME ACTION
 				var tooltip = document.getElementById(relay_id);
-				tooltip.style.display = "none";
-
+				if(tooltip) tooltip.style.display = "none";
 				inp.classList.remove("cbi-input-invalid");
+
 				payload = {"relay_data": {"name": new_name}, "globals_data": {}};
 				send_action(action, relay_id, payload);
 			}
 		})
 	})
-}
-// It is required to handle "Enter" key while editing Relay name
-// This function disable general form submit from Enter pressing
-window.addEventListener('keydown',function(e) {
-	if(e.target.getAttribute("name") == "relay_name") {
-		if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13) {
-			if(e.target.nodeName=='INPUT'&&e.target.type=='text') { 
-				e.preventDefault();
-				rename_relay(e.target)
-				return false;
-			}
-		}
-	}
-},true);
-
-function reset_error_style(inp) {
-	var relay_id = inp.getAttribute("data-relay");
-	var tooltip = document.getElementById(relay_id);
-		tooltip.style.display = "none";
-		inp.classList.remove("cbi-input-invalid");
-}
-
-/*
- function button_action_(btn) {
-	var action = btn.getAttribute("data-action") || "0",
-		relay = btn.getAttribute("data-relay") || "0",
-		// для команды "rename" входное данное берём из <input type=text value>
-		// для других команд - из <input type=button data-payload>
-		payload = (action == "rename") ? btn.value : btn.getAttribute("data-payload") || "0";
-		console.log(btn.attributes)
-	var xhr = new XHR(false);
-	var btn_spinner = document.getElementById("btn_enable_spinner");;
-	spinner(btn_spinner, 1);
-	btn.disabled = true;
-	xhr.post('<%=luci.dispatcher.build_url("admin", "system", "relay", "action")%>/'+ '%h/%h'.format(action, relay), null,
-	// xhr.post('<%=luci.dispatcher.build_url("admin", "system", "relay", "action")%>', null,
-		function (x) {
-			if (!x) {
-				return;
-			}
-			btn.disabled = false;
-			spinner(btn_spinner, 0);
-			location.assign('<%=luci.dispatcher.build_url("admin", "system", "relay")%>');
-	});
-}
-*/
-
-function spinner(element, state) {
-	if (state === 1) {
-		element.style.width = "16px";
-		element.innerHTML = '<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" width="16" height="16" style="vertical-align:middle" />';
-	}
-	else {
-		element.style.width = "0px";
-		element.innerHTML = '';
-	}
 }
 
 function send_action(action, relay_id, payload) {
@@ -127,6 +73,36 @@ function send_action(action, relay_id, payload) {
 			location.assign('<%=luci.dispatcher.build_url("admin", "system", "relay")%>');
 		}
 	);
+}
+
+// It is required to handle "Enter" key while editing Relay name
+// This function disable general form submit from Enter pressing
+window.addEventListener('keydown',function(e) {
+	if(e.target.name=="relay_name") {
+		var relay_id = e.target.getAttribute("data-relay");
+		var tooltip = document.getElementById(relay_id);
+		tooltip.style.display = "none";
+		e.target.classList.remove("cbi-input-invalid");
+		if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13) {
+			if(e.target.nodeName=='INPUT'&&e.target.type=='text') { 
+				e.preventDefault();
+				rename_relay(e.target)
+				return false;
+			}
+		}
+	}
+},true);
+
+
+function spinner(element, state) {
+	if (state === 1) {
+		element.style.width = "16px";
+		element.innerHTML = '<img src="<%=resource%>/icons/loading.gif" alt="<%:Loading%>" width="16" height="16" style="vertical-align:middle" />';
+	}
+	else {
+		element.style.width = "0px";
+		element.innerHTML = '';
+	}
 }
 
 //]]>
