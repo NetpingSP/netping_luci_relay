@@ -5,7 +5,6 @@ local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 
-
 function index()
 	if nixio.fs.access("/etc/config/settings") then
 		entry({"admin", "system", "relay"}, cbi("netping_luci_relay/relay"), "Relays", 30)
@@ -13,44 +12,65 @@ function index()
 	end
 end
 
-function do_action(action, relay)
-	local payload = luci.http.formvalue()
-	local allowed_options = util.keys(uci:get_all(config, "prototype"))
+function do_action(action, relay_id)
+	local payload = {}
+	payload["relay_data"] = luci.jsonc.parse(luci.http.formvalue("relay_data"))
+	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do payload["relay_data"][k] = nil end
+	payload["globals_data"] = luci.jsonc.parse(luci.http.formvalue("globals_data"))
 	local commands = {
 		add = function(...)
-			local default_name = uci:get(config, "globals", "default_name")
-			local count, record = 1, {}
+			local prototype = uci:get_all(config, "prototype")
+			local globals = uci:get_all(config, "globals")
+			local count = 0
 			uci:foreach(config, "relay", function() count = count + 1 end)
-			record = {
-				["name"] = default_name .. " " .. count
-			}
-			uci:section(config, "relay", nil, record)
+			prototype["name"] = globals["default_name"] .. " " .. count
+			prototype["dest_port"] = globals["default_port"]
+			prototype["restart_time"] = globals["restart_time"]
+			for _, k in pairs({".name", ".anonymous", ".type"}) do prototype[k] = nil end
+			
+			uci:section(config, "relay", nil, prototype)
 			uci:commit(config)
 		end,
-		rename = function(relay, payload)
-			if payload["name"] then
-				uci:set(config, relay, "name", payload["name"])
+		rename = function(relay_id, payload)
+			util.perror("-- HEREE --")
+			util.perror(payload["relay_data"]["name"])
+			if payload["relay_data"]["name"] then
+				uci:set(config, relay_id, "name", payload["relay_data"]["name"])
 				uci:commit(config)
 			end
 		end,
-		delete = function(relay, ...)
+		delete = function(relay_id, ...)
 			-- protect embedded relays from deleting
-			local embedded = uci:get(config, relay, "embedded") == "1"
+			local embedded = uci:get(config, relay_id, "embedded") == "1"
 			if not embedded then
-				uci:delete(config, relay)
+				uci:delete(config, relay_id)
 				uci:commit(config)
 			end
 		end,
-		switch = function(relay, ...)
-			local old_state = tonumber(uci:get(config, relay, "state"))
+		switch = function(relay_id, ...)
+			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
-			uci:set(config, relay, "state", new_state)
+			uci:set(config, relay_id, "state", new_state)
 			uci:commit(config)
 		end,
-		edit = function(relay, payload)
-			for key, value in payload do
-				if util.contains(allowed_payloads, key) then
-					uci:set(config, relay, key, value)
+		edit = function(relay_id, payloads)
+			-- apply settings.<relay_id>
+			local allowed_relay_options = util.keys(uci:get_all(config, "prototype"))
+			for key, value in pairs(payloads["relay_data"]) do
+				if util.contains(allowed_relay_options, key) then
+					uci:set(config, relay_id, key, value)
+				end
+				uci:commit(config)
+			end
+			-- apply settings.globals
+			local allowed_global_options = util.keys(uci:get_all(config, "globals"))
+			for key, value in pairs(payloads["globals_data"]) do
+				if util.contains(allowed_global_options, key) then
+					if type(value) == "table" then
+						uci:set_list(config, "globals", key, value)
+					else
+						uci:set(config, "globals", key, value)
+					end
 				end
 				uci:commit(config)
 			end
@@ -61,7 +81,7 @@ function do_action(action, relay)
 		end
 	}
 	if commands[action] then
-		commands[action](relay, payload)
+		commands[action](relay_id, payload)
 		commands["default"]()
 	end
 end

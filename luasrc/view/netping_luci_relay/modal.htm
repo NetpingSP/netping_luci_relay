@@ -3,52 +3,130 @@
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 	local globals = uci:get_all(config, "globals")
-	util.dumptable(globals)
+	--util.dumptable(globals)
 %>
 <script type="text/javascript">
 //<![CDATA[
-function edit_relay(btn) {
-	var relay_data = {
-		protocol: btn.getAttribute("data-protocol") || null,
-		embedded: (btn.getAttribute("data-embedded") == 1) ? true : false || false
-		// TODO дополнить объект данными о реле (согласно ТЗ)
+// gets a record from uci like <settings.globals.proto='first.Протокол 1' 'second.Протокол 2' 'third.Протокол 3'>
+// returns object like {"first": "Протокол 1", "second": "Протокол 2", "third": "Протокол 3"}
+function widgetPopulation(uci_section, uci) {
+	var section = uci.get("settings", uci_section) || [];
+	return function(uci_option) {
+		var population = {}
+		if (section[uci_option]) {
+			section[uci_option].forEach(function(p) {
+				population[p.split(".")[0]] = p.split(".")[1];
+			})
+		}
+		return population
 	}
-
+}
+function edit_relay(btn) {
+	var globals_data = {}
+	var relay_id = btn.getAttribute("data-relay") || null;
 	L.require("ui").then(function(ui){
 		L.require("uci").then(function(uci) {
 			uci.load("settings").then(function(out){
-				var globals = uci.get("settings", "globals"),
-					protos = {};
-				
-				// Protocol dropdown data				
-				globals["proto"].forEach(function(p) {
-					protos[p.split(".")[0]] = p.split(".")[1];
-				})
-				proto_dropdown = new ui.Dropdown(relay_data["protocol"], protos, {
-					disabled: relay_data["embedded"]
-				}).render();
+				globals_data = uci.get("settings", "globals");
+				var globals = widgetPopulation("globals", uci),
+					relay_data = uci.get("settings", relay_id),
+					embedded = relay_data["embedded"] == '1' ? true : false
+
+				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { disabled: embedded, sort: true });
+				var state_on_term = new ui.Textfield(globals("state")["1"], { maxlength: 24 });
+				var state_off_term = new ui.Textfield(globals("state")["0"], { maxlength: 24 });
+				var maxn = globals_data["relay_max_number"] || '0'
+				console.log("MaxN " + maxn)
+				var rnums = {0: 0}
+				for (var i=1; i <= parseInt(maxn, 10); i++) {
+					rnums[i] = i
+				}
+				var relay_number = new ui.Dropdown(relay_data["number"], rnums, { disabled: embedded, sort: false });
+				var dest_addr = new ui.Textfield(relay_data["dest_addr"], { maxlength: 128, disabled: embedded });
+				var dest_port = new ui.Textfield(relay_data["dest_port"], { maxlength: 4, disabled: embedded });
+				var restart_time = new ui.Textfield(relay_data["restart_time"], { maxlength: 3 });
+				var login = new ui.Textfield(relay_data["login"], { maxlength: 12, disabled: embedded });
+				var password = new ui.Textfield(relay_data["password"], { maxlength: 12, disabled: embedded, password: true });
+
 
 				// Open modal
 				L.showModal('Редактировать реле', [
-					proto_dropdown,
-					E('div', { class: 'right' }, [
-						E('div', { class: 'btn', click: L.hideModal }, _('Отмена')),
+					E('div', { class: 'cbi-map' }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Протокол') + ":"),
+									E('div', { class: 'cbi-value' }, [
+										proto.render()
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса ON') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_on_term.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса OFF') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_off_term.render(),
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Номер реле на удалённом устройстве') + ":"),
+										E('div', { class: 'cbi-value' }, [
+											relay_number.render()
+										])
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Время перезагрузки реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										restart_time.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Адрес удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_addr.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Порт удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_port.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Логин') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										login.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Пароль') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										password.render(),
+									])
+								])
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
 						' ',
-						E('div', Object.assign(relay_data, { 
-							class: 'btn success', 
-							"name": "apply",
-							click: handleEdit(event)
-						}), _('Применить изменения'))
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["dest_addr"] = dest_addr.getValue()
+									relay_data["dest_port"] = dest_port.getValue()
+									relay_data["number"] = relay_number.getValue()
+									relay_data["login"] = login.getValue()
+									relay_data["password"] = password.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+								return handleEdit(relay_id, relay_data, globals_data);
+							})
+						}, _('Сохранить'))
 					])
 				]);
 			})	
 		})
 	})
 }
-function handleEdit(event) {
-	return function() {
-		button_action(event.target)
-	}
+function handleEdit(relay_id, relay_data, globals_data) {
+	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
 }
 //]]>
 </script>

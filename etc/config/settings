@@ -12,9 +12,10 @@ config globals 'globals'
 	option restart_time '30'
 	option default_port '80'
 	option default_name 'Relay'
+	option relay_max_number '16'
 
 config relay 'prototype'
-	option name 'Relay 1'
+	option name 'Relay'
 	option embedded '0'
 	option state '0'
 	option status '0'
@@ -24,6 +25,7 @@ config relay 'prototype'
 	option dest_addr '0.0.0.0'
 	option login 'user'
 	option password 'pass'
+	option number '0'
 
 config relay
 	option name 'Relay 1'
@@ -50,6 +52,7 @@ config relay
 	option dest_addr '0.0.0.0'
 	option login 'user'
 	option password 'pass'
+	option number '0'
 
 config relay
 	option name 'Relay 4'
@@ -62,4 +65,5 @@ config relay
 	option dest_addr '1.1.1.1'
 	option login 'user'
 	option password 'pass'
+	option number '0'
 

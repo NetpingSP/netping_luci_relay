@@ -8,6 +8,24 @@
 	local util = require "luci.util"
 	
 	local relays = uci:get_all(config)
+	local globals = uci:get_all(config, "globals")
+
+	-- Prepare state label, customized with globals setting
+	local state_label = {}
+	for _, s in pairs(globals["state"]) do
+		for k, v in s.gmatch(s, "(%d+)\.(.*)") do
+			state_label[k] = v
+		end	
+	end
+
+	-- Prepare status label
+	local status_label = {}
+	for _, s in pairs(globals["status"]) do
+		for k, v in s.gmatch(s, "(%d+)\.(.*)") do
+			status_label[k] = v
+		end	
+	end
+
 	-- remove from iterating non-relay types
 	relays["globals"] = nil
 	relays["prototype"] = nil
@@ -15,49 +33,74 @@
 %> 
 <div id="view">
 	<h2 name="content">Управление реле</h2>
-	<div class="cbi-map-descr">В данной таблице приведены локаьные и удалённые  реле. Вы можете добавить, переименовать, переключить реле. Локальные реле удалить невозможно, т.к. они встроены в устройство.</div>
-	<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
-		value="Добавить реле"
-		data-action="add" />
+	<div class="cbi-map-descr">В данной таблице приведены локальные и удалённые  реле. Вы можете добавить, переименовать, переключить и настроить реле. Локальные реле удалить невозможно, т.к. они встроены в устройство.</div>
+	<input type="button" class="cbi-button cbi-button-apply" style="margin-bottom: 1em;"
+		onclick="add_relay(this)"
+		value="Добавить реле"/>
 
 	<div class="table">
 		<div class="tr table-titles">
 			<div class="th" style="width: 100%;">Памятка</div>
 			<div class="th">Тип</div>
 			<div class="th">Состояние</div>
+			<div class="th">Статус</div>
 			<div class="th center nowrap cbi-section-actions">Управление</div>
 		</div>
 		<% for k, v in util.kspairs(relays) do %>
 			<div class="tr cbi-rowstyle-<%=i%>">
 				<div class="td" data-title="Памятка" style="text-align: left;">
-					<input type="text" onblur="button_action(this)" 
+					<input type="text"
+					onchange="rename_relay(this)"
+					onkeydown="reset_error_style(this)"
+					name="relay_name"
 					value="<%=v.name%>"
 					data-relay="<%=k%>"
 					data-action="rename"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="<%=k%>" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
 				</div>
 				<div class="td" data-title="Тип">
 					<% if v.embedded == "1" then write("Локально") else write("Удалённо") end %>
 				</div>
 				<div class="td" data-title="Состояние">
-					<% if v.state == "1" then write("ВКЛ") else write("Выкл") end %>
+					<%=state_label[v.state]%>
+				</div>
+				<div class="td" data-title="Состояние">
+					<%=status_label[v.status]%>
 				</div>
 				<div class="center nowrap cbi-section-actions td">
-					<input type="button" class="cbi-button cbi-button-apply" onclick="button_action(this)"
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
 						value="Переключить"
-						data-action="switch"
 						data-relay="<%=k%>" 
 						style="display: initial;" />
 					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
 						value="Настройки"
 						data-action="edit"
 						data-relay="<%=k%>" 
-						data-protocol="<%=v.proto%>" 
+						data-proto="<%=v.proto%>" 
 						data-embedded="<%=v.embedded%>" 
 						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Уведомления"
+						data-relay="<%=k%>" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="<%=k%>" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="<%=k%>" 
+						style="display: initial;" />
+
 					<% if v.embedded == "0" then %>
-					<input type="button" class="cbi-button cbi-button-reset" onclick="button_action(this)"
+					<input type="button" class="cbi-button cbi-button-reset" onclick="delete_relay(this)"
 						value="Удалить"
-						data-action="delete"
 						data-relay="<%=k%>"
 						style="display: initial;" />
 					<% end %>
