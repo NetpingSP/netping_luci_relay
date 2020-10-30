@@ -1,3 +1,8 @@
+
+**ВНИМАНИЕ!** Для получения последней актуальной версии - смотрите список веток.
+К примеру, на 30.10.2020 последняя версия находится в [ветке v2](https://github.com/Netping/netping_luci_relay/tree/v2)
+
+
 # netping_luci_relay
 
 OpenWrt LuCI page for relay management.
