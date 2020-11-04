@@ -1,0 +1,198 @@
+
+<script
+  src="https://code.jquery.com/jquery-3.5.1.min.js"
+  integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+  crossorigin="anonymous"></script>
+
+<script src="/luci-static/resources/jquery.highlight-within-textarea.js" type="text/javascript" charset="utf-8" async defer></script>
+
+<script type="text/javascript">
+//<![CDATA[
+
+
+
+function edit_alert(btn) {
+	L.require("ui").then(function(ui){
+		L.require("uci").then(function(uci) {
+			uci.load("settings").then(function(out){
+
+				var active = new ui.Checkbox("1");
+
+				var event = new ui.Dropdown("0", { 
+					"1": "Нет связи",
+					"2": "Перезагрузка",
+					"3": "Ошибка"
+				}, { optional: true });
+				var eventsNode = event.render()
+
+				var tmpl_vars = new ui.Dropdown("0", { 
+					"%_device_id_%": "%_device_id_%",
+					"%_device_command_%": "%_device_command_%",
+					"%_device_command_param_%": "%_device_command_param_%"
+				});
+				var tmpl_vars_widget = tmpl_vars.render()
+
+				var send_condition = new ui.TextAreaHighlighted("", { 
+					optional: true,
+					datatype: "rangelength(0,256)" });
+
+				var key = ""; // catch % key pressed
+				send_condition_widget = send_condition.render();
+
+				// Настройка подсветки параметров в тексте шаблона сообщений
+				var paramHighlighter = {
+					_obj: {},
+					param_list: ["%_device_id_%", "%_device_command_%"], // список названий параметов, напр: ["%_device_id_%", "%_device_command_%"]
+					render: function() {
+						if(!this._obj.length) {
+							this._obj = $('.cbi-input-textarea').highlightWithinTextarea({
+							    highlight: this.param_list // string, regexp, array, function, or custom object
+							});
+						} else {
+							$('.cbi-input-textarea').highlightWithinTextarea('update');	
+						}
+					}
+				}
+				var textArea = send_condition_widget.children[1]
+				textArea.addEventListener('keyup', (event) => {
+					key = event.key || "Escape";
+					if(key == "Escape") {
+						tmpl_vars.closeAllDropdowns()
+						tmpl_vars_widget.parentNode.style.visibility = "hidden";
+					} 
+					paramHighlighter.render()
+				});
+
+
+				var already = false;
+				function insertTmplVar() {
+					return	L.bind(function(ev) {
+						if(!already) {
+							already = true;
+							var tVar = tmpl_vars.getValue() || false
+							var pos = textArea.selectionEnd;
+							if (pos >= 1 && tVar) {
+								var oldVal = send_condition.getValue();
+								var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
+								send_condition.setValue(newVal);
+								textArea.focus()
+							}
+							tmpl_vars.setValue("")
+							tmpl_vars_widget.parentNode.style.visibility = "hidden";
+							paramHighlighter.render()
+						}
+					})
+				}
+				
+				 send_condition.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
+				 send_condition_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
+
+				tmpl_vars.registerEvents(send_condition_widget, "on-speckey-pressed", ["keyup"])
+				tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
+					already = false;
+					// var textArea = document.querySelector(".message-template textarea")
+					if(key == "Escape") {
+						tmpl_vars.closeAllDropdowns()
+						ev.target.parentNode.style.visibility = "hidden";
+					} else if(key=="%") {
+						var coordinates = getCaretCoordinates(textArea, textArea.selectionEnd);
+						ev.target.parentNode.style.left = coordinates.left + "px";
+						ev.target.parentNode.style.top = coordinates.top + "px";
+						ev.target.parentNode.style.visibility = "visible";
+						key = "";
+						paramHighlighter.render()
+					} else if(key != "Shift") {
+						ev.target.parentNode.style.visibility = "hidden";
+						paramHighlighter.render()
+					}
+				}));
+				
+
+				var method_alert = new ui.Dropdown(0, { 
+					"1": "Sms",
+					"2": "Email",
+					"3": "Syslog"
+				}, { optional: false });
+
+				var message_template = new ui.Textarea("", { 
+					optional: true,
+					datatype: "rangelength(3,64)" });
+
+
+				var send_interval = new ui.Textfield("", { 
+					optional: true,
+					datatype: "rangelength(2,24)" });
+
+
+				// Open modal
+				L.showModal('Настройка автоматического уведомления', [
+					E('div', { class: 'cbi-map', 'style': "margin-top: 1em;" }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Активно') + ":"),
+									E('div', { class: 'cbi-value-field' }, [
+										active.render()
+									])
+								]),
+								/*
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Тип события') + ":"),
+									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+										event.render(),
+									])
+								]),
+								*/
+
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Шаблон сообщения') + ":"),
+									E('div', { class: 'cbi-value-field message-template', style: 'width: 50%;' }, [
+										send_condition_widget,
+									]),
+									E('div', { class: '', style: 'width: auto; position: absolute; left: 50px; visibility: hidden;' }, [
+										tmpl_vars_widget
+									]),
+								]),
+								/*
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Метод отправки') + ":"),
+									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+										method_alert.render(),
+									]),
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Шаблон сообщения') + ":"),
+									E('div', { class: 'cbi-value-field', style: 'width: 50%;' }, [
+										message_template.render(),
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Интервал отправки') + ":"),
+									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+										send_interval.render(),
+									])
+								])
+								*/
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+						' ',
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+									return handleSaveAlert();
+								
+							})
+						}, _('Сохранить'))
+					])
+				]);
+			})	
+		})
+	})
+}
+function handleSaveAlert(handleSaveAlert) {
+	// send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
+}
+//]]>
+</script>

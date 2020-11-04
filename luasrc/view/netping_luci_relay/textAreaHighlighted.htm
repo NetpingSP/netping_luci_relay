@@ -1,0 +1,76 @@
+<script type="text/javascript">
+//<![CDATA[
+L.require('ui').then(function(ui) {
+	L.require('dom').then(function(dom) {
+		var UITextareaHighlighted = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
+			__init__: function(value, options) {
+				this.value = value;
+				this.options = Object.assign({
+					optional: true,
+					wrap: false,
+					cols: null,
+					rows: null
+				}, options);
+			},
+
+
+			/** @override */
+			render: function() {
+				var style = !this.options.cols ? 'width:100%; background: none; height: 200px; line-height: 200%; padding: 0px;' : null,
+				    frameEl = E('div', { class: 'hwt-backdrop' }, [
+							E('div', { class: 'hwt-highlights hwt-content' })
+				    ]),
+				    container = E('div', { 'id': this.options.id, 'style': style, 'class': 'hwt-container' }, [
+				    	frameEl
+					]);
+				    value = (this.value != null) ? String(this.value) : '';
+
+				container.appendChild(E('textarea', {
+					'id': this.options.id ? 'widget.' + this.options.id : null,
+					'name': this.options.name,
+					'class': 'cbi-input-textarea hwt-input',
+					'readonly': this.options.readonly ? '' : null,
+					'disabled': this.options.disabled ? '' : null,
+					'placeholder': this.options.placeholder,
+					'style': style,
+					'cols': this.options.cols,
+					'rows': this.options.rows,
+					'wrap': this.options.wrap ? '' : null
+				}, [ value ]));
+
+				if (this.options.monospace)
+					frameEl.firstElementChild.style.fontFamily = 'monospace';
+
+				return this.bind(container);
+			},
+
+			/** @private */
+			bind: function(container) {
+				var inputEl = container.children[1];
+
+				this.node = container;
+
+				this.setUpdateEvents(inputEl, 'keyup', 'blur');
+				this.setChangeEvents(inputEl, 'change');
+
+				dom.bindClassInstance(container, this);
+
+				return container;
+			},
+
+			/** @override */
+			getValue: function() {
+				return this.node.children[1].value;
+			},
+
+			/** @override */
+			setValue: function(value) {
+				this.node.children[1].value = value;
+			}
+		});
+
+		ui["TextAreaHighlighted"] = UITextareaHighlighted;
+	});
+});
+//]]>
+</script>

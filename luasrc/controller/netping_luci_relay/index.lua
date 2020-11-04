@@ -9,6 +9,7 @@ function index()
 	if nixio.fs.access("/etc/config/settings") then
 		entry({"admin", "system", "relay"}, cbi("netping_luci_relay/relay"), "Relays", 30)
 		entry({"admin", "system", "relay", "action"}, call("do_action"), nil).leaf = true
+		entry({"admin", "system", "alerts"}, cbi("netping_luci_relay/alert"), nil).leaf = true
 	end
 end
 
