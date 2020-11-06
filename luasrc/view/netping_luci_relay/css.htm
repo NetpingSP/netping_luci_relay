@@ -24,4 +24,117 @@
 		text-align: left;
 	}
 
+.modal, #modal_overlay > .modal {
+	max-width: 1000px;
+}
+
+.message-template {
+	width: 70%;
+}
+
+#modal_overlay .modal > * {
+    flex-basis: 100%;
+}
+
+.cbi-dropdown:not(.btn):not(.cbi-button), .cbi-dynlist {
+    min-width: 50px;
+    max-width: 400px;
+    width: auto;
+    margin: 0 15px 5px 0px;
+}
+
+.alert-condition {
+	margin-top: 50px;	
+	margin-bottom: 30px;
+}
+
+
+.alert-condition input[type=text] {
+    width: 50px;
+    min-width: 50px;
+}
+
+.alert-condition p.small-lable {
+	font-size: 0.8em;
+	line-height: 0px;
+	padding-bottom: 2px;
+}
+
+.alert-setting label {
+	font-weight: bolder;
+	font-size: 1.3em;
+}
+
+.alert-setting .cbi-value {
+	margin-left: 30px;
+}
+
+.alert-setting .cbi-value-field .cbi-dropdown:nth-child(2),
+.alert-setting .cbi-value-field .cbi-dropdown:nth-child(3) {
+	width: 130px;
+	margin: 0 15px 5px 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row {
+	display: inline-block;
+	min-width: 50px;
+    width: 50px;
+    margin: 0 15px 0px 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(5) {
+    margin-right: 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(2),
+.alert-setting .cbi-value-field .first-condition-row:nth-child(3) {
+	width: 130px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(4) div.cbi-dropdown,
+.alert-setting .cbi-value-field .first-condition-row:nth-child(1) div.cbi-dropdown
+	min-width: 50px;
+    width: 50px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(1) div.cbi-dropdown {
+	visibility: hidden;
+}
+
+.alert-condition div.cbi-value-field div.first-condition-row:nth-child(1) div.cbi-dropdown {
+	width: 50px;
+	visibility: hidden;
+}
+
+.alert-condition div.cbi-value-field div.first-condition-row:nth-child(4) div.cbi-dropdown {
+	width: 50px;
+}
+
+.alert-setting .cbi-value-field {
+	margin-bottom: 5px;
+}
+
+.cbi-dynlist {
+    height: auto;
+    min-height: 30px;
+    margin-right: 5px;
+    display: inline-flex;
+    flex-direction: unset;
+    max-width: 600px;
+}
+
+.cbi-dynlist .item {
+	margin-right: 10px;
+}
+
+.alert-setting .hours .cbi-dropdown {
+	width: 50px;
+	margin-right: 0px;
+}
+
+html body.lang_en.modal-overlay-active div#modal_overlay div.modal div.cbi-map.alert-setting div.cbi-map-section div.cbi-map-section-node div.cbi-value div.hours.cbi-value-field div.cbi-dropdown {
+	width: 50px;
+}
+
+
 </style>

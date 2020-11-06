@@ -43,6 +43,7 @@
 				</div>
 				<div class="nowrap cbi-section-actions td">
 					<input type="button" class="cbi-button cbi-button-apply"
+						onclick="edit_alert(this)"
 						value="Настроить"
 						style="display: initial;" />
 					<input type="button" class="cbi-button cbi-button-reset"
@@ -88,6 +89,7 @@
 				</div>
 				<div class="nowrap cbi-section-actions td">
 					<input type="button" class="cbi-button cbi-button-apply"
+						onclick="edit_alert(this)"
 						value="Настроить"
 						style="display: initial;" />
 					<input type="button" class="cbi-button cbi-button-reset"
@@ -97,7 +99,7 @@
 			</div>
 		</div>
 		<input type="button" class="cbi-button cbi-button-apply" style="margin-top: 2em; margin-bottom: 1em;"
-				onclick='location.assign("/cgi-bin/luci/admin/system/relay");'
+				onclick=window.location='<%=luci.dispatcher.build_url("admin", "system", "relay")%>'
 				value="Вернуться к списку реле"/>
 	</div>
 </div>

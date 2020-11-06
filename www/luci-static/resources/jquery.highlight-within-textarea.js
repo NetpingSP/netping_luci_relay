@@ -87,40 +87,6 @@
 			this.handleInput();
 		},
 
-/*
-		generate: function() {
-			this.$el
-				.addClass(ID + '-input ' + ID + '-content')
-				.on('input.' + ID, this.handleInput.bind(this))
-				.on('scroll.' + ID, this.handleScroll.bind(this));
-
-			this.$highlights = $('<div>', { class: ID + '-highlights ' + ID + '-content' });
-
-			this.$backdrop = $('<div>', { class: ID + '-backdrop' })
-				//.append(this.$highlights);
-
-			this.$container = $('<div>', { class: ID + '-container' })
-				.insertAfter(this.$el)
-				.append(this.$backdrop, this.$el) // moves $el into $container
-				.on('scroll', this.blockContainerScroll.bind(this));
-
-			this.browser = this.detectBrowser();
-			switch (this.browser) {
-				case 'firefox':
-					this.fixFirefox();
-					break;
-				case 'ios':
-					this.fixIOS();
-					break;
-			}
-
-			// plugin function checks this for success
-			this.isGenerated = true;
-
-			// trigger input event to highlight any existing input
-			this.handleInput();
-		},
-*/
 
 		// browser sniffing sucks, but there are browser-specific quirks to handle
 		// that are not a matter of feature detection

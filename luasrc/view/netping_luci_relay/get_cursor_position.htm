@@ -131,8 +131,6 @@ function getCaretCoordinates(element, position, options) {
   div.appendChild(span);
 
 	var pos = element.getBoundingClientRect();
-	console.log("----------POS------------")
-	console.log(pos)
 
   var coordinates = {
     top: span.offsetTop + parseInt(pos.top),

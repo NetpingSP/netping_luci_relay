@@ -78,8 +78,7 @@
 						data-proto="<%=v.proto%>" 
 						data-embedded="<%=v.embedded%>" 
 						style="display: initial;" />
-					<input type="button" class="cbi-button cbi-button-apply"
-						disabled
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='<%=luci.dispatcher.build_url("admin", "system", "alerts")%>'
 						value="Уведомления"
 						data-relay="<%=k%>" 
 						style="display: initial;" />
