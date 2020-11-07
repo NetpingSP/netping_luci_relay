@@ -9,333 +9,418 @@
 <script type="text/javascript">
 //<![CDATA[
 function edit_alert(btn) {
-	L.require("ui").then(function(ui){
-		L.require("uci").then(function(uci) {
-			uci.load("settings").then(function(out){
+	L.require("session").then(function(session){
+		L.require("ui").then(function(ui){
+			L.require("uci").then(function(uci) {
+				uci.load("settings").then(function(out){
 
-				var active = new ui.Checkbox("1");
+					var active = new ui.Checkbox("1");
 
-				var event = new ui.Dropdown("0", { 
-					"1": "Нет связи",
-					"2": "Перезагрузка",
-					"3": "Ошибка"
-				}, { optional: true });
-				var eventsNode = event.render()
-
-				var tmpl_vars = new ui.Dropdown("0", { 
-					"%_device_id_%": "%_device_id_%",
-					"%_device_command_%": "%_device_command_%",
-					"%_device_command_param_%": "%_device_command_param_%"
-				});
-				var tmpl_vars_widget = tmpl_vars.render()
-
-				var defaultTmpl = "Неисправен вентилятор в серверной стойке %_rackid_%!"
-				var key = ""; // catch % key pressed
-				var alert_template = new ui.TextAreaHighlighted(defaultTmpl, { 
-					optional: true,
-					datatype: "rangelength(0,256)",
-					readonly: true,
-					highlights: ["%_device_command_param_%", "%_device_id_%", "%_device_command_%", "%_rackid_%"] });
-				var alert_template_widget = alert_template.render()
-				var textArea = alert_template_widget.children[1]
-				textArea.addEventListener('keyup', (event) => {
-					key = event.key || "Escape";
-					if(key == "Escape") {
-						tmpl_vars.closeAllDropdowns()
-						tmpl_vars_widget.parentNode.style.visibility = "hidden";
-					} 
-					alert_template.highlight()
-				});
-
-				function allowTmplEdit() {
-					alert_template_widget.children[1].readOnly = false;
-					document.querySelector("[name='revert-tmpl-default']").style.display = "block"
-					document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
-				}
-				function revertTmplDefault() {
-					alert_template_widget.children[1].readOnly = true;
-					document.querySelector("[name='revert-tmpl-default']").style.display = "none"
-					document.querySelector("[name='allow-tmpl-edit']").style.display = "block"
-				}
+					var event = new ui.Dropdown("no_conn", { 
+						"no_conn": "Нет связи",
+						"restart": "Перезагрузка",
+						"error": "Неисправность"
+					}, { optional: true });
+					var event_widget = event.render()
 
 
-				var already = false; // avoid fire event twice
-				function insertTmplVar() {
-					return	L.bind(function(ev) {
-						if(!already) {
-							already = true;
-							var tVar = tmpl_vars.getValue() || false
-							var pos = textArea.selectionEnd;
-							if (pos >= 1 && tVar) {
-								var oldVal = alert_template.getValue();
-								var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
-								alert_template.setValue(newVal);
-								textArea.focus()
-							}
-							tmpl_vars.setValue("")
+					var alert_method = new ui.Dropdown("syslog", { 
+						"sms": "Sms",
+						"email": "Email",
+						"syslog": "Syslog"
+					}, { optional: false });
+					var alert_method_widget = alert_method.render();
+
+
+					var tmpl_vars = new ui.Dropdown("0", { 
+						"%_rackid_%": "%_rackid_%",
+						"%_rackid::location_%": "%_rackid::location_%", 
+						"%_user_%": "%_user_%",
+						"%_user::lastname_%": "%_user::lastname_%", 
+						"%_user::firstname_%": "%_user::firstname_%",
+						"%_relayid_%": "%_relayid_%",
+						"%_datetime_%": "%_datetime_%"
+					});
+					var tmpl_vars_widget = tmpl_vars.render()
+
+					// access - defaultTemplates[eventId][channelId]
+					var defaultTemplates = {
+						"no_conn": { 
+							"sms": "Реле %_relayid_% не отвечает на запросы!", 
+							"syslog": "%_datetime_%  ###  Реле %_relayid_% не отвечает на запросы!",
+							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nРеле %_relayid_% не отвечает на запросы. \n\nСистема автоматических уведомлений\nNetPing"  
+						},
+						"restart": {
+							"sms": "Изменилось состояние %_relayid_% - перезагрузка.", 
+							"syslog": "%_datetime_%  ###  Изменилось состояние %_relayid_% - перезагрузка.",
+							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nИзменилось состояние %_relayid_% - перезагрузка. \n\nСистема автоматических уведомлений\nNetPing"  
+						},
+						"error": { 
+							"sms": "Неисправность работы вентилятора в серверной стойке %_rackid_% в ЦОД по адресу %_rackid::location_%!", 
+							"syslog": "%_datetime_%  ###  Неисправность работы вентилятора в серверной стойке %_rackid_%!",
+							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nВозникла неисправность в работе вентилятора серверной стойки %_rackid_%, расположенной в ЦОД по адресу %_rackid::location_%! \n\nСистема автоматических уведомлений\nNetPing"
+						}
+					}
+					session.setLocalData("default-alert-templates", defaultTemplates)
+					session.setLocalData("custom-alert-templates", defaultTemplates)
+					var key = ""; // catch % key pressed
+					var alert_template = new ui.TextAreaHighlighted(defaultTemplates[event.getValue()][alert_method.getValue()], { 
+						optional: true,
+						datatype: "rangelength(0,256)",
+						readonly: true,
+						highlights: [
+							"%_rackid::location_%", 
+							"%_rackid_%", 
+							"%_user::lastname_%", 
+							"%_user::firstname_% ",
+							"%_relayid_%",
+							"%_datetime_%"
+						] });
+					var alert_template_widget = alert_template.render()
+					var textArea = alert_template_widget.children[1]
+
+					textArea.addEventListener('keyup', (event) => {
+						key = event.key || "Escape";
+						if(key == "Escape") {
+							tmpl_vars.closeAllDropdowns()
 							tmpl_vars_widget.parentNode.style.visibility = "hidden";
+						} else {
+							// save custom template to local storage
+							saveTmplCustom(undefined, undefined, alert_template_widget.children[1].value)
+						}
+						alert_template.highlight()
+					});
+
+					function allowTmplEdit() {
+						document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
+						document.querySelector("[name='tmpl-custom']").style.display = "block"
+						document.querySelector("[name='tmpl-default']").style.display = "block"
+						loadTmplCustom()
+					}
+					function loadTmplDefault(eventId=undefined, channelId=undefined) {
+						var tmpls = session.getLocalData("custom-alert-templates")
+						var evnt_id = eventId || event.getValue() || "1"
+						var chnl_id = channelId || alert_method.getValue() || "sms"
+						alert_template_widget.children[1].readOnly = true;
+
+						var storedTmpls = session.getLocalData("default-alert-templates")			
+						alert_template_widget.children[1].value = storedTmpls[evnt_id][chnl_id]
+
+						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "none";
+						document.querySelector("[name='tmpl-default']").style.backgroundImage = "url(/luci-static/resources/icons/check-grey.png)";
+						alert_template.highlight()
+					}
+
+					function loadTmplCustom(eventId=undefined, channelId=undefined) {
+						var tmpls = session.getLocalData("custom-alert-templates")
+						var evnt_id = eventId || event.getValue() || "1"
+						var chnl_id = channelId || alert_method.getValue() || "sms"
+						alert_template_widget.children[1].readOnly = false;
+
+						var storedTmpls = session.getLocalData("custom-alert-templates")
+						alert_template_widget.children[1].value = storedTmpls[evnt_id][chnl_id] + "\n\n"
+
+						alert_template_widget.children[1].focus();
+						document.querySelector("[name='tmpl-default']").style.backgroundImage = "none";
+						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "url(/luci-static/resources/icons/check.png)";
+						alert_template.highlight()
+					}
+
+					function saveTmplCustom(eventId=undefined, channelId=undefined, tmpltext) {
+						var tmpls = session.getLocalData("custom-alert-templates")
+						var evnt_id = eventId || event.getValue() || "1"
+						var chnl_id = channelId || alert_method.getValue() || "sms"
+						tmpls[evnt_id][chnl_id] = tmpltext
+						session.setLocalData("custom-alert-templates", tmpls)
+					}
+
+
+					var already = false; // avoid fire event twice
+					function insertTmplVar() {
+						return	L.bind(function(ev) {
+							if(!already) {
+								already = true;
+								var tVar = tmpl_vars.getValue() || false
+								var pos = textArea.selectionEnd;
+								if (pos >= 1 && tVar) {
+									var oldVal = alert_template.getValue();
+									var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
+									alert_template.setValue(newVal);
+									// save custom template to local storage
+									saveTmplCustom(undefined, undefined, newVal)
+									textArea.focus()
+								}
+								tmpl_vars.setValue("")
+								tmpl_vars_widget.parentNode.style.visibility = "hidden";
+								alert_template.highlight()
+							}
+						})
+					}
+					
+					alert_template.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
+					alert_template_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
+
+					alert_template.registerEvents(event_widget, "event-selected", ["cbi-dropdown-change"]);
+					alert_template_widget.addEventListener('event-selected', L.bind(function(ev) { loadTmplDefault() }), false);
+
+					alert_template.registerEvents(alert_method_widget, "alert-method-selected", ["cbi-dropdown-change"]);
+					alert_template_widget.addEventListener('alert-method-selected', L.bind(function(ev) { loadTmplDefault() }), false);
+
+					tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
+					tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
+						already = false;
+						if(key == "Escape") {
+							tmpl_vars.closeAllDropdowns()
+							ev.target.parentNode.style.visibility = "hidden";
+						} else if(key=="%") {
+							var coordinates = getCaretCoordinates(textArea, textArea.selectionEnd);
+							var scrollTextArea_Y = textArea.scrollTop;
+							ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
+							ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
+							ev.target.parentNode.style.visibility = "visible";
+							key = "";
+							alert_template.highlight()
+						} else if(key != "Shift") {
+							ev.target.parentNode.style.visibility = "hidden";
 							alert_template.highlight()
 						}
-					})
-				}
-				
-				alert_template.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
-				alert_template_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
+					}));
+					
 
-				tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
-				tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
-					already = false;
-					if(key == "Escape") {
-						tmpl_vars.closeAllDropdowns()
-						ev.target.parentNode.style.visibility = "hidden";
-					} else if(key=="%") {
-						var coordinates = getCaretCoordinates(textArea, textArea.selectionEnd);
-						var scrollTextArea_Y = textArea.scrollTop;
-						ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
-						ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
-						ev.target.parentNode.style.visibility = "visible";
-						key = "";
-						alert_template.highlight()
-					} else if(key != "Shift") {
-						ev.target.parentNode.style.visibility = "hidden";
-						alert_template.highlight()
+					var conditions = {
+						defaultLogics: {
+							and: "AND",
+							or: "OR"
+						},
+
+						logics: ["or"],
+						records: [
+							{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
+							{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
+						],
+						dropDownData: function(key) {
+							var out = {}
+							this.records.forEach(function(item, i, arr) {
+								out[item[key]] = item[key]
+							})
+							return out;
+						}
 					}
-				}));
-				
 
-				var method_alert = new ui.Dropdown(0, { 
-					"sms": "Sms",
-					"email": "Email",
-					"syslog": "Syslog"
-				}, { optional: false });
+					var cond_object = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+					var cond_param = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+					var cond_operator = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+					var cond_val = new ui.Textfield("900", { optional: false });
 
+					var cond_logic = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
+					var cond_object2 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+					var cond_param2 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+					var cond_operator2 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+					var cond_val2 = new ui.Textfield("60", { optional: false });
 
-				var conditions = {
-					defaultLogics: {
-						and: "AND",
-						or: "OR"
-					},
+					var cond_logic2 = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
+					var cond_object3 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+					var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+					var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+					var cond_val3 = new ui.Textfield("15", { optional: false });
 
-					logics: ["or"],
-					records: [
-						{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
-						{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
-					],
-					dropDownData: function(key) {
-						var out = {}
-						this.records.forEach(function(item, i, arr) {
-							out[item[key]] = item[key]
-						})
-						return out;
+					var weekdays = new ui.DynamicList(["Пн","Вт","Ср","Чт","Пт"], {
+						"Пн": "Пн",
+						"Вт": "Вт",
+						"Ср": "Ср",
+						"Чт": "Чт",
+						"Пт": "Пт",
+						"Сб": "Сб",
+						"Вс": "Вс"
+					}, { optional: false, multiple: true, display_items: 7, create: false, readonly: true, sort: ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"] });
+
+					var hours = {
+						"08:00": "08:00",
+						"09:00": "09:00",
+						"10:00": "10:00",
+						"11:00": "11:00",
+						"12:00": "12:00",
+						"13:00": "13:00",
+						"14:00": "14:00",
+						"15:00": "15:00",
+						"16:00": "16:00",
+						"17:00": "17:00",
+						"18:00": "18:00",
+						"19:00": "19:00",
+						"20:00": "20:00",
+						"21:00": "21:00",
+						"22:00": "22:00",
+						"23:00": "23:00",
+						"00:00": "00:00",
+						"01:00": "01:00",
+						"02:00": "02:00",
+						"03:00": "03:00",
+						"04:00": "04:00",
+						"05:00": "05:00",
+						"06:00": "06:00",
+						"07:00": "07:00"
 					}
-				}
-
-				var cond_object = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-				var cond_param = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-				var cond_operator = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-				var cond_val = new ui.Textfield("900", { optional: false });
-
-				var cond_logic = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-				var cond_object2 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-				var cond_param2 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-				var cond_operator2 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-				var cond_val2 = new ui.Textfield("60", { optional: false });
-
-				var cond_logic2 = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-				var cond_object3 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-				var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-				var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-				var cond_val3 = new ui.Textfield("15", { optional: false });
-
-				var weekdays = new ui.DynamicList(["Пн","Вт","Ср","Чт","Пт"], {
-					"Пн": "Пн",
-					"Вт": "Вт",
-					"Ср": "Ср",
-					"Чт": "Чт",
-					"Пт": "Пт",
-					"Сб": "Сб",
-					"Вс": "Вс"
-				}, { optional: false, multiple: true, display_items: 7, create: false, readonly: true, sort: ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"] });
-
-				var hours = {
-					"08:00": "08:00",
-					"09:00": "09:00",
-					"10:00": "10:00",
-					"11:00": "11:00",
-					"12:00": "12:00",
-					"13:00": "13:00",
-					"14:00": "14:00",
-					"15:00": "15:00",
-					"16:00": "16:00",
-					"17:00": "17:00",
-					"18:00": "18:00",
-					"19:00": "19:00",
-					"20:00": "20:00",
-					"21:00": "21:00",
-					"22:00": "22:00",
-					"23:00": "23:00",
-					"00:00": "00:00",
-					"01:00": "01:00",
-					"02:00": "02:00",
-					"03:00": "03:00",
-					"04:00": "04:00",
-					"05:00": "05:00",
-					"06:00": "06:00",
-					"07:00": "07:00"
-				}
-				var startTime = new ui.Dropdown("08:00", hours)
-				var endTime = new ui.Dropdown("18:00", hours)
+					var startTime = new ui.Dropdown("08:00", hours)
+					var endTime = new ui.Dropdown("18:00", hours)
 
 
 
 
 
-				// Open modal
-				L.showModal('Настройка автоматического уведомления', [
-					E('div', { class: 'cbi-map alert-setting', 'style': "margin-top: 1em;" }, [
-						E('div', { class: 'cbi-map-section' }, [
-							E('div', { class: 'cbi-map-section-node' }, [
-								E('div', { class: 'cbi-value' }, [
-									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Активно') + ":"),
-									E('div', { class: 'cbi-value-field' }, [
-										active.render()
-									])
-								]),
-								E('div', { class: 'cbi-value' }, [
-									E('label', { 'class': 'cbi-value-title', 'style': 'margin-top: -10px; padding-right:2rem;' }, _('Отправить уведомлении если') + ":"),
-									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-										event.render(),
-										"        используя: ",
-										method_alert.render(),
+					// Open modal
+					L.showModal('Настройка автоматического уведомления', [
+						E('div', { class: 'cbi-map alert-setting', 'style': "margin-top: 1em;" }, [
+							E('div', { class: 'cbi-map-section' }, [
+								E('div', { class: 'cbi-map-section-node' }, [
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Активно') + ":"),
+										E('div', { class: 'cbi-value-field' }, [
+											active.render()
+										])
 									]),
-								]),
-
-								E('div', { class: 'cbi-value' }, [
-									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
-										_('Шаблон уведомления') + ":",
-										E('br'),
-										E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Используйте символ % для выбора параметра из списка.')),
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'margin-top: -10px; padding-right:2rem;' }, _('Отправить уведомлении если') + ":"),
+										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+											event_widget,
+											"        используя: ",
+											alert_method_widget,
+										]),
 									]),
-									E('div', { class: 'cbi-value-field message-template' }, [
-										alert_template_widget,
-										E('a', { 
-												name: 'allow-tmpl-edit',
-												style: 'text-decoration: underline; float: right; cursor: pointer;',
+
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
+											_('Шаблон уведомления') + ":",
+											E('br'),
+											E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Используйте символ % для выбора параметра из списка.')),
+										]),
+										E('div', { class: 'cbi-value-field message-template' }, [
+											alert_template_widget,
+											E('a', { 
+													name: 'allow-tmpl-edit',
+													style: 'text-decoration: underline; float: right; cursor: pointer;',
+													click: ui.createHandlerFn(this, function() {
+														return allowTmplEdit();
+													})
+												}, _('Редактировать шаблон')),
+											E('a', { 
+													name: 'tmpl-default',
+													style: 'color: grey;',
+													click: ui.createHandlerFn(this, function() {
+														return loadTmplDefault();
+													})
+												}, _('Default')),
+												E('a', { 
+													name: 'tmpl-custom',
+													style: '',
+													click: ui.createHandlerFn(this, function() {
+														return loadTmplCustom();
+													})
+												}, _('Custom')),
+
+										]),
+										/* Виджет для выбра и подстановки парамтеров в шаблон */
+										E('div', { class: '', style: 'width: auto; position: absolute; left: 50px; visibility: hidden;' }, [
+											tmpl_vars_widget
+										]),
+									]),
+									E('div', { class: 'cbi-value alert-condition' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
+										E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
+											E('div', {class: 'first-condition-row'}, [
+												E('p', {class: 'small-lable'}, "Логика"),
+												cond_logic.render(),
+											]),
+											E('div', {class: 'first-condition-row'}, [
+												E('p', {class: 'small-lable'}, "Объект"),
+												cond_object.render(),
+											]),
+											E('div', {class: 'first-condition-row'}, [
+												E('p', {class: 'small-lable'}, "Атрибут"),
+												cond_param.render(),
+											]),
+											E('div', {class: 'first-condition-row'}, [
+												E('p', {class: 'small-lable'}, "Оператор"),
+												cond_operator.render(),
+											]),
+											
+											E('div', {class: 'first-condition-row'}, [
+												E('p', {class: 'small-lable'}, "Значение"),
+												cond_val.render(),
+											]),
+											E('a', { 
+												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
 												click: ui.createHandlerFn(this, function() {
 													return allowTmplEdit();
 												})
-											}, _('Редактировать шаблон')),
-										E('a', { 
-												name: 'revert-tmpl-default',
-												style: 'text-decoration: underline; float: right; display: none; color: red; cursor: pointer;',
-												click: ui.createHandlerFn(this, function() {
-													return revertTmplDefault();
-												})
-											}, _('Отменить изменения')),
-
-									]),
-									/* Виджет для выбра и подстановки парамтеров в шаблон */
-									E('div', { class: '', style: 'width: auto; position: absolute; left: 50px; visibility: hidden;' }, [
-										tmpl_vars_widget
-									]),
-								]),
-								E('div', { class: 'cbi-value alert-condition' }, [
-									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
-									E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
-										E('div', {class: 'first-condition-row'}, [
-											E('p', {class: 'small-lable'}, "Логика"),
+											}, _('Удалить')),
+										]),
+										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
 											cond_logic.render(),
+											cond_object2.render(),
+											cond_param2.render(),
+											cond_operator2.render(),
+											E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
+												cond_val2.render(),
+											]),
+											E('a', { 
+												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+												click: ui.createHandlerFn(this, function() {
+													return allowTmplEdit();
+												})
+											}, _('Удалить')),
 										]),
-										E('div', {class: 'first-condition-row'}, [
-											E('p', {class: 'small-lable'}, "Объект"),
-											cond_object.render(),
+										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+											cond_logic2.render(),
+											cond_object3.render(),
+											cond_param3.render(),
+											cond_operator3.render(),
+											E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
+												cond_val3.render(),
+											]),
+											E('a', { 
+												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+												click: ui.createHandlerFn(this, function() {
+													return allowTmplEdit();
+												})
+											}, _('Удалить')),
 										]),
-										E('div', {class: 'first-condition-row'}, [
-											E('p', {class: 'small-lable'}, "Атрибут"),
-											cond_param.render(),
+										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+											E('a', { 
+												style: 'text-decoration: underline; cursor: pointer;',
+												click: ui.createHandlerFn(this, function() {
+													return allowTmplEdit();
+												})
+											}, _('Добавить условие')),
 										]),
-										E('div', {class: 'first-condition-row'}, [
-											E('p', {class: 'small-lable'}, "Оператор"),
-											cond_operator.render(),
-										]),
-										
-										E('div', {class: 'first-condition-row'}, [
-											E('p', {class: 'small-lable'}, "Значение"),
-											cond_val.render(),
-										]),
-										E('a', { 
-											style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-											click: ui.createHandlerFn(this, function() {
-												return allowTmplEdit();
-											})
-										}, _('Удалить')),
 									]),
-									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-										cond_logic.render(),
-										cond_object2.render(),
-										cond_param2.render(),
-										cond_operator2.render(),
-										E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-											cond_val2.render(),
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('График отправки') + ":"),
+										E('div', { class: 'cbi-value-field' }, [
+											weekdays.render()
 										]),
-										E('a', { 
-											style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-											click: ui.createHandlerFn(this, function() {
-												return allowTmplEdit();
-											})
-										}, _('Удалить')),
+										E('div', { class: 'hours cbi-value-field' }, [
+											startTime.render(),
+											E('p', { style: 'margin: 0 12px 0 11px; display: inline-block;' }, "---"),
+											endTime.render(),
+										])
 									]),
-									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-										cond_logic2.render(),
-										cond_object3.render(),
-										cond_param3.render(),
-										cond_operator3.render(),
-										E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-											cond_val3.render(),
-										]),
-										E('a', { 
-											style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-											click: ui.createHandlerFn(this, function() {
-												return allowTmplEdit();
-											})
-										}, _('Удалить')),
-									]),
-									E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-										E('a', { 
-											style: 'text-decoration: underline; cursor: pointer;',
-											click: ui.createHandlerFn(this, function() {
-												return allowTmplEdit();
-											})
-										}, _('Добавить условие')),
-									]),
-								]),
-								E('div', { class: 'cbi-value' }, [
-									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('График отправки') + ":"),
-									E('div', { class: 'cbi-value-field' }, [
-										weekdays.render()
-									]),
-									E('div', { class: 'hours cbi-value-field' }, [
-										startTime.render(),
-										E('p', { style: 'margin: 0 12px 0 11px; display: inline-block;' }, "---"),
-										endTime.render(),
-									])
-								]),
+								])
 							])
+						]),
+						E('div', { class: 'cbi-value-field', style: 'margin-top: 30px; margin-bottom: 30px;' }, [
+							E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+							' ',
+							E('div', { class: 'btn success', "name": "apply",
+								'click': ui.createHandlerFn(this, function() {
+										return handleSaveAlert();
+									
+								})
+							}, _('Сохранить'))
 						])
-					]),
-					E('div', { class: 'cbi-value-field', style: 'margin-top: 30px; margin-bottom: 30px;' }, [
-						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
-						' ',
-						E('div', { class: 'btn success', "name": "apply",
-							'click': ui.createHandlerFn(this, function() {
-									return handleSaveAlert();
-								
-							})
-						}, _('Сохранить'))
-					])
-				]);
-			})	
-		})
+					]);
+				})	
+			})
+		})	
 	})
 }
 function handleSaveAlert(handleSaveAlert) {
