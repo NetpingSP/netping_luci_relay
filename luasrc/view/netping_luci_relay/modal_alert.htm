@@ -20,7 +20,7 @@ function edit_alert(btn) {
 						"no_conn": "Нет связи",
 						"restart": "Перезагрузка",
 						"error": "Неисправность"
-					}, { optional: true });
+					}, { optional: false });
 					var event_widget = event.render()
 
 
@@ -61,9 +61,10 @@ function edit_alert(btn) {
 							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nВозникла неисправность в работе вентилятора серверной стойки %_rackid_%, расположенной в ЦОД по адресу %_rackid::location_%! \n\nСистема автоматических уведомлений\nNetPing"
 						}
 					}
+					// store templates in local storage
 					session.setLocalData("default-alert-templates", defaultTemplates)
 					session.setLocalData("custom-alert-templates", defaultTemplates)
-					var key = ""; // catch % key pressed
+
 					var alert_template = new ui.TextAreaHighlighted(defaultTemplates[event.getValue()][alert_method.getValue()], { 
 						optional: true,
 						datatype: "rangelength(0,256)",
@@ -73,60 +74,69 @@ function edit_alert(btn) {
 							"%_rackid_%", 
 							"%_user::lastname_%", 
 							"%_user::firstname_% ",
+							"%_user_%",
 							"%_relayid_%",
 							"%_datetime_%"
 						] });
 					var alert_template_widget = alert_template.render()
-					var textArea = alert_template_widget.children[1]
 
-					textArea.addEventListener('keyup', (event) => {
+					var key = ""; // catch % key pressed
+					alert_template_widget.addEventListener('keyup', (event) => {
 						key = event.key || "Escape";
 						if(key == "Escape") {
 							tmpl_vars.closeAllDropdowns()
 							tmpl_vars_widget.parentNode.style.visibility = "hidden";
 						} else {
 							// save custom template to local storage
-							saveTmplCustom(undefined, undefined, alert_template_widget.children[1].value)
+							saveTmplCustom(alert_template.getValue())
 						}
-						alert_template.highlight()
 					});
 
+					// enable Custom / Default switcher
 					function allowTmplEdit() {
 						document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
 						document.querySelector("[name='tmpl-custom']").style.display = "block"
 						document.querySelector("[name='tmpl-default']").style.display = "block"
 						loadTmplCustom()
 					}
+					// load default templae to textarea
 					function loadTmplDefault(eventId=undefined, channelId=undefined) {
 						var tmpls = session.getLocalData("custom-alert-templates")
-						var evnt_id = eventId || event.getValue() || "1"
-						var chnl_id = channelId || alert_method.getValue() || "sms"
-						alert_template_widget.children[1].readOnly = true;
+						var evnt_id = eventId || event.getValue() || undefined
+						var chnl_id = channelId || alert_method.getValue() || undefined
+						alert_template.getTextArea().readOnly = true;
 
-						var storedTmpls = session.getLocalData("default-alert-templates")			
-						alert_template_widget.children[1].value = storedTmpls[evnt_id][chnl_id]
+						if(evnt_id && chnl_id) {
+							var storedTmpls = session.getLocalData("default-alert-templates")			
+							alert_template.setValue(storedTmpls[evnt_id][chnl_id])
+						} else {
+							alert_template.setValue("")
+						}
 
 						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "none";
 						document.querySelector("[name='tmpl-default']").style.backgroundImage = "url(/luci-static/resources/icons/check-grey.png)";
-						alert_template.highlight()
 					}
 
+					// load custom template to textarea
 					function loadTmplCustom(eventId=undefined, channelId=undefined) {
 						var tmpls = session.getLocalData("custom-alert-templates")
-						var evnt_id = eventId || event.getValue() || "1"
-						var chnl_id = channelId || alert_method.getValue() || "sms"
-						alert_template_widget.children[1].readOnly = false;
+						var evnt_id = eventId || event.getValue() || undefined
+						var chnl_id = channelId || alert_method.getValue() || undefined
+						alert_template.getTextArea().readOnly = false;
 
-						var storedTmpls = session.getLocalData("custom-alert-templates")
-						alert_template_widget.children[1].value = storedTmpls[evnt_id][chnl_id] + "\n\n"
+						if(evnt_id && chnl_id) {
+							var storedTmpls = session.getLocalData("custom-alert-templates")
+							alert_template.setValue(storedTmpls[evnt_id][chnl_id] + "\n")
+						} else {
+							alert_template.setValue("")
+						}
+						alert_template.getTextArea().focus()
 
-						alert_template_widget.children[1].focus();
 						document.querySelector("[name='tmpl-default']").style.backgroundImage = "none";
 						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "url(/luci-static/resources/icons/check.png)";
-						alert_template.highlight()
 					}
 
-					function saveTmplCustom(eventId=undefined, channelId=undefined, tmpltext) {
+					function saveTmplCustom(tmpltext, eventId=undefined, channelId=undefined) {
 						var tmpls = session.getLocalData("custom-alert-templates")
 						var evnt_id = eventId || event.getValue() || "1"
 						var chnl_id = channelId || alert_method.getValue() || "sms"
@@ -141,18 +151,17 @@ function edit_alert(btn) {
 							if(!already) {
 								already = true;
 								var tVar = tmpl_vars.getValue() || false
-								var pos = textArea.selectionEnd;
+								var pos = alert_template.getTextArea().selectionEnd;
 								if (pos >= 1 && tVar) {
 									var oldVal = alert_template.getValue();
 									var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
 									alert_template.setValue(newVal);
 									// save custom template to local storage
-									saveTmplCustom(undefined, undefined, newVal)
-									textArea.focus()
+									saveTmplCustom(newVal)
+									alert_template.getTextArea().focus();
 								}
 								tmpl_vars.setValue("")
 								tmpl_vars_widget.parentNode.style.visibility = "hidden";
-								alert_template.highlight()
 							}
 						})
 					}
@@ -173,16 +182,14 @@ function edit_alert(btn) {
 							tmpl_vars.closeAllDropdowns()
 							ev.target.parentNode.style.visibility = "hidden";
 						} else if(key=="%") {
-							var coordinates = getCaretCoordinates(textArea, textArea.selectionEnd);
-							var scrollTextArea_Y = textArea.scrollTop;
+							var coordinates = getCaretCoordinates(alert_template.getTextArea(), alert_template.getTextArea().selectionEnd);
+							var scrollTextArea_Y = alert_template.getTextArea().scrollTop;
 							ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
 							ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
 							ev.target.parentNode.style.visibility = "visible";
 							key = "";
-							alert_template.highlight()
 						} else if(key != "Shift") {
 							ev.target.parentNode.style.visibility = "hidden";
-							alert_template.highlight()
 						}
 					}));
 					

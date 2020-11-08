@@ -73,7 +73,6 @@ L.require('ui').then(function(ui) {
 				this.setChangeEvents(inputEl, 'change');
 
 				dom.bindClassInstance(container, this);
-				// this.highlight();
 
 				return container;
 			},
@@ -86,6 +85,11 @@ L.require('ui').then(function(ui) {
 			/** @override */
 			setValue: function(value) {
 				this.node.children[1].value = value;
+				this.highlight();
+			},
+
+			getTextArea: function() {
+				return this.node.children[1]
 			}
 		});
 
