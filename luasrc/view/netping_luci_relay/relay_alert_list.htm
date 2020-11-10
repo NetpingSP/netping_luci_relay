@@ -1,23 +1,37 @@
 <%+netping_luci_relay/css%>
-<%+netping_luci_relay/js%>
+<%+netping_luci_relay/alert.js%>
 <%+netping_luci_relay/modal_alert%>
 <%+netping_luci_relay/get_cursor_position%>
 <%+netping_luci_relay/jquery.highlight-within-textarea.css%>
 <%+netping_luci_relay/textAreaHighlighted%>
 
-
-
-
 <%
 	local config = "settings"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
+
+	-- make alerts table for html rendering
+	local alerts = {}
+	function withEveryAlert(a)
+		if (a[".name"] ~= "alert_prototype") then
+			alerts[a[".name"]] = a
+			local days = ""
+			for j=1,#a.day do
+				days = days .. util.split(a.day[j], ".")[2] .. ", "
+			end
+			alerts[a[".name"]]["day"] = days
+		end
+		util.dumptable(alerts)
+	end
+	uci:foreach(config, "alert", withEveryAlert)
+	local i = 1
 %> 
 <div id="view">
 	<h2 name="content">Список автоматических уведомлений реле "Серверный шкаф основной"</h2>
 	<div class="cbi-map-descr">В данной таблице - список настроенных уведомлений о событиях реле "Серверный шкаф основной".</div>
 	<input type="button" class="cbi-button cbi-button-apply" style="margin-bottom: 1em;"
-		onclick="add_relay(this)"
+		onclick="add_alert(this)"
+		data-relayid=""
 		value="Добавить автоматическое уведомление"/>
 
 	<div class="table">
@@ -28,75 +42,43 @@
 			<div class="th" style="width: 50%;">Интервал</div>
 			<div class="th center nowrap cbi-section-actions">Управление</div>
 		</div>
-			<div class="tr cbi-rowstyle-0">
+		<% for k, v in util.kspairs(alerts) do %>
+			<div class="tr cbi-rowstyle-<%=i%>">
 				<div class="td" data-title="Активно" style="text-align: left;">
-					<div class="cbi-checkbox" data-changed="true"><input id="cb180941ff" type="checkbox" value="0"><label for="cb180941ff"></label></div>
+					<% 
+						local checked = ""
+						if v.enabled == "1" then
+							checked = "checked"
+						end
+					%>
+					<div class="cbi-checkbox" data-changed="true">
+						<input id="cb180941ff" type="checkbox" <%=checked %> value="<%=v.enabled %>">
+						<label for="cb180941ff"></label></div>
 				</div>
 				<div class="td" data-title="Событие">
-					Перезагрузка
+					<%=v.event %>
 				</div>
 				<div class="td" data-title="Метод уведомления">
-					Email
+					<%=v.sendmethod %>
 				</div>
 				<div class="td" data-title="Интервал">
-					&nbsp;&nbsp;&nbsp;&#822;
+					<%=v.day %> <%=v.starttime %> - <%=v.endtime %>
 				</div>
 				<div class="nowrap cbi-section-actions td">
 					<input type="button" class="cbi-button cbi-button-apply"
 						onclick="edit_alert(this)"
+						data-alertid="<%=k%>"
 						value="Настроить"
 						style="display: initial;" />
 					<input type="button" class="cbi-button cbi-button-reset"
+						onclick="delete_alert(this)"
 						value="Удалить"
 						style="display: initial;" />
 				</div>
 			</div>
-			<div class="tr cbi-rowstyle-1">
-				<div class="td" data-title="Активно" style="text-align: left;">
-					<div class="cbi-checkbox" data-changed="true"><input id="cb180941ff" type="checkbox" value="0" checked=""><label for="cb180941ff"></label></div>
-				</div>
-				<div class="td" data-title="Событие">
-					Ошибка
-				</div>
-				<div class="td" data-title="Метод уведомления">
-					SMS
-				</div>
-				<div class="td" data-title="Интервал">
-					[1234567](08:00 - 07:59)
-				</div>
-				<div class="nowrap cbi-section-actions td">
-					<input type="button" class="cbi-button cbi-button-apply"
-						onclick="edit_alert(this)"
-						value="Настроить"
-						style="display: initial;" />
-					<input type="button" class="cbi-button cbi-button-reset"
-						value="Удалить"
-						style="display: initial;" />
-				</div>
-			</div>
-			<div class="tr cbi-rowstyle-0">
-				<div class="td" data-title="Активно" style="text-align: left;">
-					<div class="cbi-checkbox" data-changed="true"><input id="cb180941ff" type="checkbox" value="0" ><label for="cb180941ff"></label></div>
-				</div>
-				<div class="td" data-title="Событие">
-					Нет связи
-				</div>
-				<div class="td" data-title="Метод уведомления">
-					Syslog
-				</div>
-				<div class="td" data-title="Интервал">
-					08:00 - 07:59
-				</div>
-				<div class="nowrap cbi-section-actions td">
-					<input type="button" class="cbi-button cbi-button-apply"
-						onclick="edit_alert(this)"
-						value="Настроить"
-						style="display: initial;" />
-					<input type="button" class="cbi-button cbi-button-reset"
-						value="Удалить"
-						style="display: initial;" />
-				</div>
-			</div>
+			<% i = (i%2) + 1 %>
+		<% end %>
+
 		</div>
 		<input type="button" class="cbi-button cbi-button-apply" style="margin-top: 2em; margin-bottom: 1em;"
 				onclick=window.location='<%=luci.dispatcher.build_url("admin", "system", "relay")%>'

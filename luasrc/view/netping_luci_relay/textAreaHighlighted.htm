@@ -15,7 +15,6 @@ L.require('ui').then(function(ui) {
 			},
 			__highlighter: {},
 
-
 			/** @override */
 			render: function() {
 				var style = !this.options.cols ? 'width:100%; background: none; height: 160px; line-height: 200%; padding: 0px; resize: none;' : null,
@@ -84,7 +83,9 @@ L.require('ui').then(function(ui) {
 
 			/** @override */
 			setValue: function(value) {
-				this.node.children[1].value = value;
+				// replace \\n to \n because of Server API luci.util.serialize_json() escapes \n with \\n
+				var val = value.replace(/\\n/g,'\n'); 
+				this.node.children[1].value = val;
 				this.highlight();
 			},
 

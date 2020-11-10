@@ -1,3 +1,72 @@
+<%
+	local config = "settings"
+	local uci = require "luci.model.uci".cursor()
+	local util = require "luci.util"
+	local fs = require "nixio.fs"
+
+	-- population of "Select event" widget
+	local possible_events = {}
+	local pos_ev = uci:get_list(config, "globals", "possible_event")
+	util.dumptable(pos_ev)
+	for i=1, #pos_ev do
+		local pair = util.split(pos_ev[i], ".")
+		possible_events[pair[1]] = pair[2]
+	end
+
+	-- population of "Select send method" widget
+	local possible_sendmethods = {}
+	local pos_smeth = uci:get_list(config, "globals", "possible_sendmethod")
+	util.dumptable(pos_smeth)
+	for i=1, #pos_smeth do
+		local pair = util.split(pos_smeth[i], ".")
+		possible_sendmethods[pair[1]] = pair[2]
+	end
+
+
+	-- make alerts table
+	local alerts = {}
+	function withEveryAlert(a)
+		if (a[".name"] ~= "alert_prototype") then
+			alerts[a[".name"]] = a
+
+			-- make list of days as string
+			local days = ""
+			for j=1,#a.day do
+				days = days .. util.split(a.day[j], ".")[2] .. ", "
+			end
+			alerts[a[".name"]]["day"] = days
+
+			-- make template params as table
+			local params = {}
+			for j=1, #a.template_param do
+				params[a.template_param[j]] = a.template_param[j]
+			end
+			alerts[a[".name"]]["template_param"] = params
+		end
+		util.dumptable(alerts)
+	end
+	uci:foreach(config, "alert", withEveryAlert)
+
+	-- Get list of default templates
+	local tmpl_path = uci:get(config, "globals", "default_template_path")
+	local tmpls = fs.dir(tmpl_path)
+	local default_templates = {} -- all default templates will be loaded here from files
+
+	for filename in tmpls do
+		-- get event id and sendmethod id by parsing filename
+		-- e.g.: "error.sms" - event_id==error, sendmethod_id==sms
+		local s, e = filename:find("%.")
+		local event_id = filename:sub(1, s-1)
+		local sendmethod_id = filename:sub(s+1, filename:len())
+
+		if(type(default_templates[event_id]) ~= "table") then
+			default_templates[event_id] = {}
+		end
+		default_templates[event_id][sendmethod_id] = fs.readfile(tmpl_path .. "/" .. filename)
+	end
+
+
+%>
 
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -9,58 +78,34 @@
 <script type="text/javascript">
 //<![CDATA[
 function edit_alert(btn) {
+	var alert_id = btn.getAttribute("data-alertid")
+	var alerts = <%=util.serialize_json(alerts) %>
+	var theAlert = alerts[alert_id]
+	var possibleEvents = <%=util.serialize_json(possible_events) %>
+	var possibleSendmethods = <%=util.serialize_json(possible_sendmethods) %>
+	
+
 	L.require("session").then(function(session){
 		L.require("ui").then(function(ui){
 			L.require("uci").then(function(uci) {
 				uci.load("settings").then(function(out){
 
-					var active = new ui.Checkbox("1");
+					var active = new ui.Checkbox(theAlert["enabled"]);
 
-					var event = new ui.Dropdown("no_conn", { 
-						"no_conn": "Нет связи",
-						"restart": "Перезагрузка",
-						"error": "Неисправность"
-					}, { optional: false });
+					var event = new ui.Dropdown("error", possibleEvents, { optional: false });
 					var event_widget = event.render()
 
 
-					var alert_method = new ui.Dropdown("syslog", { 
-						"sms": "Sms",
-						"email": "Email",
-						"syslog": "Syslog"
-					}, { optional: false });
+					var alert_method = new ui.Dropdown("syslog", possibleSendmethods, { optional: false });
 					var alert_method_widget = alert_method.render();
 
 
-					var tmpl_vars = new ui.Dropdown("0", { 
-						"%_rackid_%": "%_rackid_%",
-						"%_rackid::location_%": "%_rackid::location_%", 
-						"%_user_%": "%_user_%",
-						"%_user::lastname_%": "%_user::lastname_%", 
-						"%_user::firstname_%": "%_user::firstname_%",
-						"%_relayid_%": "%_relayid_%",
-						"%_datetime_%": "%_datetime_%"
-					});
+					var tmpl_vars = new ui.Dropdown("0", theAlert["template_param"]);
 					var tmpl_vars_widget = tmpl_vars.render()
 
-					// access - defaultTemplates[eventId][channelId]
-					var defaultTemplates = {
-						"no_conn": { 
-							"sms": "Реле %_relayid_% не отвечает на запросы!", 
-							"syslog": "%_datetime_%  ###  Реле %_relayid_% не отвечает на запросы!",
-							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nРеле %_relayid_% не отвечает на запросы. \n\nСистема автоматических уведомлений\nNetPing"  
-						},
-						"restart": {
-							"sms": "Изменилось состояние %_relayid_% - перезагрузка.", 
-							"syslog": "%_datetime_%  ###  Изменилось состояние %_relayid_% - перезагрузка.",
-							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nИзменилось состояние %_relayid_% - перезагрузка. \n\nСистема автоматических уведомлений\nNetPing"  
-						},
-						"error": { 
-							"sms": "Неисправность работы вентилятора в серверной стойке %_rackid_% в ЦОД по адресу %_rackid::location_%!", 
-							"syslog": "%_datetime_%  ###  Неисправность работы вентилятора в серверной стойке %_rackid_%!",
-							"email": "Здравствуйте, %_user::firstname_% %_user::lastname_%! \nВозникла неисправность в работе вентилятора серверной стойки %_rackid_%, расположенной в ЦОД по адресу %_rackid::location_%! \n\nСистема автоматических уведомлений\nNetPing"
-						}
-					}
+					// Генерируем JS_объект defaultTemplates
+					var defaultTemplates = <%=util.serialize_json(default_templates) %>
+
 					// store templates in local storage
 					session.setLocalData("default-alert-templates", defaultTemplates)
 					session.setLocalData("custom-alert-templates", defaultTemplates)
@@ -69,15 +114,7 @@ function edit_alert(btn) {
 						optional: true,
 						datatype: "rangelength(0,256)",
 						readonly: true,
-						highlights: [
-							"%_rackid::location_%", 
-							"%_rackid_%", 
-							"%_user::lastname_%", 
-							"%_user::firstname_% ",
-							"%_user_%",
-							"%_relayid_%",
-							"%_datetime_%"
-						] });
+						highlights: Object.keys(theAlert["template_param"]) });
 					var alert_template_widget = alert_template.render()
 
 					var key = ""; // catch % key pressed

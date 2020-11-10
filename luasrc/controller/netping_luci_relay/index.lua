@@ -8,19 +8,20 @@ local util = require "luci.util"
 function index()
 	if nixio.fs.access("/etc/config/settings") then
 		entry({"admin", "system", "relay"}, cbi("netping_luci_relay/relay"), "Relays", 30)
-		entry({"admin", "system", "relay", "action"}, call("do_action"), nil).leaf = true
+		entry({"admin", "system", "relay", "action"}, call("do_relay_action"), nil).leaf = true
 		entry({"admin", "system", "alerts"}, cbi("netping_luci_relay/alert"), nil).leaf = true
+		entry({"admin", "system", "alerts", "action"}, call("do_action"), nil).leaf = true
 	end
 end
 
-function do_action(action, relay_id)
+function do_relay_action(action, relay_id)
 	local payload = {}
 	payload["relay_data"] = luci.jsonc.parse(luci.http.formvalue("relay_data"))
 	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do payload["relay_data"][k] = nil end
 	payload["globals_data"] = luci.jsonc.parse(luci.http.formvalue("globals_data"))
 	local commands = {
 		add = function(...)
-			local prototype = uci:get_all(config, "prototype")
+			local prototype = uci:get_all(config, "relay_prototype")
 			local globals = uci:get_all(config, "globals")
 			local count = 0
 			uci:foreach(config, "relay", function() count = count + 1 end)
@@ -33,7 +34,6 @@ function do_action(action, relay_id)
 			uci:commit(config)
 		end,
 		rename = function(relay_id, payload)
-			util.perror("-- HEREE --")
 			util.perror(payload["relay_data"]["name"])
 			if payload["relay_data"]["name"] then
 				uci:set(config, relay_id, "name", payload["relay_data"]["name"])
@@ -56,7 +56,7 @@ function do_action(action, relay_id)
 		end,
 		edit = function(relay_id, payloads)
 			-- apply settings.<relay_id>
-			local allowed_relay_options = util.keys(uci:get_all(config, "prototype"))
+			local allowed_relay_options = util.keys(uci:get_all(config, "relay_prototype"))
 			for key, value in pairs(payloads["relay_data"]) do
 				if util.contains(allowed_relay_options, key) then
 					uci:set(config, relay_id, key, value)
@@ -83,6 +83,31 @@ function do_action(action, relay_id)
 	}
 	if commands[action] then
 		commands[action](relay_id, payload)
+		commands["default"]()
+	end
+end
+
+
+function do_alert_action(action, alert_id)
+	local payload = {}
+	payload["alert_data"] = luci.jsonc.parse(luci.http.formvalue("alert_data"))
+	local commands = {
+		add = function(...)
+			
+		end,
+		delete = function(alert_id, ...)
+
+		end,
+		edit = function(alert_id, payloads)
+			
+		end,
+		default = function(...)
+			http.prepare_content("text/plain")
+			http.write("0")
+		end
+	}
+	if commands[action] then
+		commands[action](alert_id, payload)
 		commands["default"]()
 	end
 end
