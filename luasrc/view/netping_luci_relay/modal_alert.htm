@@ -75,8 +75,11 @@
 
 <script src="/luci-static/resources/jquery.highlight-within-textarea.js" type="text/javascript" charset="utf-8" async defer></script>
 
+<script type="text/javascript" src="<%=resource%>/rSlider.js"></script>
+
 <script type="text/javascript">
 //<![CDATA[
+
 function edit_alert(btn) {
 	var alert_id = btn.getAttribute("data-alertid")
 	var alerts = <%=util.serialize_json(alerts) %>
@@ -102,6 +105,28 @@ function edit_alert(btn) {
 
 					var tmpl_vars = new ui.Dropdown("0", theAlert["template_param"]);
 					var tmpl_vars_widget = tmpl_vars.render()
+
+					// var protected_intervals = ui.tabs()
+					// protected_intervals.initTabGroup(document.querySelector("#protected_time").childNodes())
+					function makeTabs() {
+						var tabs = document.querySelector("#protected_time").childNodes
+						ui.tabs.initTabGroup(tabs)
+
+						var slider3 = new rSlider({
+						    target: '#slider3',
+						    values: {min: 0, max: 24},
+						    step: 0.25,
+						    range: true,
+						    set: [8, 18],
+						    scale: true,
+						    labels: true,
+						    onChange: function (vals) {
+						        console.log(vals);
+						    }
+						});
+					}
+					setTimeout(makeTabs, 200)
+					
 
 					// Генерируем JS_объект defaultTemplates
 					var defaultTemplates = <%=util.serialize_json(default_templates) %>
@@ -267,6 +292,9 @@ function edit_alert(btn) {
 					var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
 					var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
 					var cond_val3 = new ui.Textfield("15", { optional: false });
+
+					var add_daytime = new ui.Checkbox(0)
+					var add_daytime_widget = add_daytime.render()
 
 					var weekdays = new ui.DynamicList(["Пн","Вт","Ср","Чт","Пт"], {
 						"Пн": "Пн",
@@ -438,14 +466,29 @@ function edit_alert(btn) {
 										]),
 									]),
 									E('div', { class: 'cbi-value' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('График отправки') + ":"),
-										E('div', { class: 'cbi-value-field' }, [
-											weekdays.render()
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
+											_('Запретить отправку') + ":",
+											E('br'),
+											E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Укажите интервалы времени когда запрещено отправлять данное уведомление.')
+											)
 										]),
-										E('div', { class: 'hours cbi-value-field' }, [
-											startTime.render(),
-											E('p', { style: 'margin: 0 12px 0 11px; display: inline-block;' }, "---"),
-											endTime.render(),
+										E('div', { class: 'cbi-value-field', style: 'width: 75%' }, [
+											E('div', { id: "protected_time" }, [
+												E('div', { class: "cbi-tab-descr", "data-tab": "daytime", "data-tab-title": "Дневной интервал", "data-tab-active": true }, [
+													E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
+													E('div', {class: "container"}, [
+														E('div', {class: "slider-container"}, [
+															E('input', {type: "text", id: "slider3", class: "slider"})
+														])
+													])
+												]),
+												E('div', { class: "cbi-tab-descr", "data-tab": "weekdays", "data-tab-title": "Дни недели" }, [
+													E('p', {}, "Дневной интервал")
+												]),
+												E('div', { class: "cbi-tab-descr", "data-tab": "monthdays", "data-tab-title": "Дни месяца" }, [
+													E('p', {}, "Дневной интервал")
+												])
+											])
 										])
 									]),
 								])
