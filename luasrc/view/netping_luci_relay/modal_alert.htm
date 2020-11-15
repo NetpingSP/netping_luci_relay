@@ -67,6 +67,8 @@
 
 
 %>
+<%+netping_luci_relay/datepicker.material.css%>
+<%+netping_luci_relay/translit.js%>
 
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -75,7 +77,10 @@
 
 <script src="/luci-static/resources/jquery.highlight-within-textarea.js" type="text/javascript" charset="utf-8" async defer></script>
 
+<!--
 <script type="text/javascript" src="<%=resource%>/rSlider.js"></script>
+//-->
+<script type="text/javascript" src="<%=resource%>/datepicker/datepicker.js"></script>
 
 <script type="text/javascript">
 //<![CDATA[
@@ -89,489 +94,564 @@ function edit_alert(btn) {
 	
 
 	L.require("session").then(function(session){
-		L.require("ui").then(function(ui){
-			L.require("uci").then(function(uci) {
-				uci.load("settings").then(function(out){
+		L.require("dom").then(function(dom){
+			L.require("ui").then(function(ui){
+				L.require("uci").then(function(uci) {
+					uci.load("settings").then(function(out){
 
-					var active = new ui.Checkbox(theAlert["enabled"]);
+						var active = new ui.Checkbox(theAlert["enabled"]);
 
-					var event = new ui.Dropdown("error", possibleEvents, { optional: false });
-					var event_widget = event.render()
-
-
-					var alert_method = new ui.Dropdown("syslog", possibleSendmethods, { optional: false });
-					var alert_method_widget = alert_method.render();
+						var event = new ui.Dropdown("error", possibleEvents, { optional: false });
+						var event_widget = event.render()
 
 
-					var tmpl_vars = new ui.Dropdown("0", theAlert["template_param"]);
-					var tmpl_vars_widget = tmpl_vars.render()
+						var alert_method = new ui.Dropdown("syslog", possibleSendmethods, { optional: false });
+						var alert_method_widget = alert_method.render();
 
 
-					var menu = {
-						hidden_place: undefined,
-						live_place: undefined,
-						items: {}
-					}
-					var pane = {
-						hidden_place: undefined,
-						live_place: undefined,
-						items: {}
-					}
-					var timeSlider = undefined
-					var init = true;
-					function makeTabs(tabs_list=[]) {
-						if (init) {
-							init = false
-							ui.tabs.initTabGroup(document.querySelector(".protected-time .protected-time-panes").childNodes)
+						var tmpl_vars = new ui.Dropdown("0", theAlert["template_param"]);
+						var tmpl_vars_widget = tmpl_vars.render()
 
-							menu.hidden_place = document.querySelector(".hidden-menu-container") || undefined
-							menu.live_place = document.querySelector(".protected-time ul.cbi-tabmenu") || undefined
 
-							pane.hidden_place = document.querySelector(".hidden-pane-container") || undefined
-							pane.live_place = document.querySelector(".protected-time .protected-time-panes") || undefined
-
-							// collect menu
-							menu.live_place.childNodes.forEach(function(node){
-								menu.items[node.getAttribute("data-tab")] = node
-							})
-
-							// collect pane
-							pane.live_place.childNodes.forEach(function(node){
-								pane.items[node.getAttribute("data-tab")] = node
-							})
-
-							// hide all menu
-							for (id in menu.items) {
-								menu.hidden_place.appendChild(menu.items[id])
-							}
-
-							// hide all pane
-							for (id in pane.items) {
-								pane.hidden_place.appendChild(pane.items[id])
-							}
+						var menu = {
+							hidden_place: undefined,
+							live_place: undefined,
+							items: {}
 						}
-
-						// hide all menu / pane which are live in presence
-						var live_now = []
-						menu.live_place.childNodes.forEach(function(node) {
-							live_now.push(node.getAttribute("data-tab"))
-						})
-						live_now.forEach(function(id) {
-							menu.hidden_place.appendChild(menu.items[id])
-							pane.hidden_place.appendChild(pane.items[id])
-						})
-						
-
-
-						// show menu / pane set by selector
-						Object.keys(menu.items).forEach(function(id) {
-							if(tabs_list.indexOf(id) > -1) {
-								menu.live_place.appendChild(menu.items[id])
-								pane.live_place.appendChild(pane.items[id])
-							}
-						})
-
-						if(tabs_list.indexOf("daytime") > -1) {
-							if (!timeSlider) {
-								timeSlider = new rSlider({
-								    target: '#slider3',
-								    values: {min: 0, max: 24},
-								    step: 0.25,
-								    range: true,
-								    set: [8, 18],
-								    scale: true,
-								    labels: true,
-								    onChange: function (vals) {
-								        console.log(vals);
-								    }
-								});
-							}
+						var pane = {
+							hidden_place: undefined,
+							live_place: undefined,
+							items: {}
 						}
-					}
-					setTimeout(makeTabs, 200)
-					
+						var timeSlider = undefined
+						var rangedDate = undefined
+						var init = true;
+						function makeTabs(tabs_list=[]) {
+							ui.tabs.timeFactory.addInterval("Привет мир!")
+							if (init) {
+								init = false
+								ui.tabs.initTabGroup(document.querySelector(".protected-time .protected-time-panes").childNodes)
 
-					// Генерируем JS_объект defaultTemplates
-					var defaultTemplates = <%=util.serialize_json(default_templates) %>
+								menu.hidden_place = document.querySelector(".hidden-menu-container") || undefined
+								menu.live_place = document.querySelector(".protected-time ul.cbi-tabmenu") || undefined
 
-					// store templates in local storage
-					session.setLocalData("default-alert-templates", defaultTemplates)
-					session.setLocalData("custom-alert-templates", defaultTemplates)
+								pane.hidden_place = document.querySelector(".hidden-pane-container") || undefined
+								pane.live_place = document.querySelector(".protected-time .protected-time-panes") || undefined
 
-					var alert_template = new ui.TextAreaHighlighted(defaultTemplates[event.getValue()][alert_method.getValue()], { 
-						optional: true,
-						datatype: "rangelength(0,256)",
-						readonly: true,
-						highlights: Object.keys(theAlert["template_param"]) });
-					var alert_template_widget = alert_template.render()
+								// collect menu
+								menu.live_place.childNodes.forEach(function(node){
+									menu.items[node.getAttribute("data-tab")] = node
+								})
 
-					var key = ""; // catch % key pressed
-					alert_template_widget.addEventListener('keyup', (event) => {
-						key = event.key || "Escape";
-						if(key == "Escape") {
-							tmpl_vars.closeAllDropdowns()
-							tmpl_vars_widget.parentNode.style.visibility = "hidden";
-						} else {
-							// save custom template to local storage
-							saveTmplCustom(alert_template.getValue())
-						}
-					});
+								// collect pane
+								pane.live_place.childNodes.forEach(function(node){
+									pane.items[node.getAttribute("data-tab")] = node
+								})
 
-					// enable Custom / Default switcher
-					function allowTmplEdit() {
-						document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
-						document.querySelector("[name='tmpl-custom']").style.display = "block"
-						document.querySelector("[name='tmpl-default']").style.display = "block"
-						loadTmplCustom()
-					}
-					// load default templae to textarea
-					function loadTmplDefault(eventId=undefined, channelId=undefined) {
-						var tmpls = session.getLocalData("custom-alert-templates")
-						var evnt_id = eventId || event.getValue() || undefined
-						var chnl_id = channelId || alert_method.getValue() || undefined
-						alert_template.getTextArea().readOnly = true;
-
-						if(evnt_id && chnl_id) {
-							var storedTmpls = session.getLocalData("default-alert-templates")			
-							alert_template.setValue(storedTmpls[evnt_id][chnl_id])
-						} else {
-							alert_template.setValue("")
-						}
-
-						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "none";
-						document.querySelector("[name='tmpl-default']").style.backgroundImage = "url(/luci-static/resources/icons/check-grey.png)";
-					}
-
-					// load custom template to textarea
-					function loadTmplCustom(eventId=undefined, channelId=undefined) {
-						var tmpls = session.getLocalData("custom-alert-templates")
-						var evnt_id = eventId || event.getValue() || undefined
-						var chnl_id = channelId || alert_method.getValue() || undefined
-						alert_template.getTextArea().readOnly = false;
-
-						if(evnt_id && chnl_id) {
-							var storedTmpls = session.getLocalData("custom-alert-templates")
-							alert_template.setValue(storedTmpls[evnt_id][chnl_id] + "\n")
-						} else {
-							alert_template.setValue("")
-						}
-						alert_template.getTextArea().focus()
-
-						document.querySelector("[name='tmpl-default']").style.backgroundImage = "none";
-						document.querySelector("[name='tmpl-custom']").style.backgroundImage = "url(/luci-static/resources/icons/check.png)";
-					}
-
-					function saveTmplCustom(tmpltext, eventId=undefined, channelId=undefined) {
-						var tmpls = session.getLocalData("custom-alert-templates")
-						var evnt_id = eventId || event.getValue() || "1"
-						var chnl_id = channelId || alert_method.getValue() || "sms"
-						tmpls[evnt_id][chnl_id] = tmpltext
-						session.setLocalData("custom-alert-templates", tmpls)
-					}
-
-
-					var already = false; // avoid fire event twice
-					function insertTmplVar() {
-						return	L.bind(function(ev) {
-							if(!already) {
-								already = true;
-								var tVar = tmpl_vars.getValue() || false
-								var pos = alert_template.getTextArea().selectionEnd;
-								if (pos >= 1 && tVar) {
-									var oldVal = alert_template.getValue();
-									var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
-									alert_template.setValue(newVal);
-									// save custom template to local storage
-									saveTmplCustom(newVal)
-									alert_template.getTextArea().focus();
+								// hide all menu
+								for (id in menu.items) {
+									menu.hidden_place.appendChild(menu.items[id])
 								}
-								tmpl_vars.setValue("")
-								tmpl_vars_widget.parentNode.style.visibility = "hidden";
+
+								// hide all pane
+								for (id in pane.items) {
+									pane.hidden_place.appendChild(pane.items[id])
+								}
 							}
-						})
-					}
-					
-					alert_template.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
-					alert_template_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
 
-					alert_template.registerEvents(event_widget, "event-selected", ["cbi-dropdown-change"]);
-					alert_template_widget.addEventListener('event-selected', L.bind(function(ev) { loadTmplDefault() }), false);
-
-					alert_template.registerEvents(alert_method_widget, "alert-method-selected", ["cbi-dropdown-change"]);
-					alert_template_widget.addEventListener('alert-method-selected', L.bind(function(ev) { loadTmplDefault() }), false);
-
-					tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
-					tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
-						already = false;
-						if(key == "Escape") {
-							tmpl_vars.closeAllDropdowns()
-							ev.target.parentNode.style.visibility = "hidden";
-						} else if(key=="%") {
-							var coordinates = getCaretCoordinates(alert_template.getTextArea(), alert_template.getTextArea().selectionEnd);
-							var scrollTextArea_Y = alert_template.getTextArea().scrollTop;
-							ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
-							ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
-							ev.target.parentNode.style.visibility = "visible";
-							key = "";
-						} else if(key != "Shift") {
-							ev.target.parentNode.style.visibility = "hidden";
-						}
-					}));
-					
-
-					var conditions = {
-						defaultLogics: {
-							and: "AND",
-							or: "OR"
-						},
-
-						logics: ["or"],
-						records: [
-							{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
-							{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
-						],
-						dropDownData: function(key) {
-							var out = {}
-							this.records.forEach(function(item, i, arr) {
-								out[item[key]] = item[key]
+							// hide all menu / pane which are live in presence
+							var live_now = []
+							menu.live_place.childNodes.forEach(function(node) {
+								live_now.push(node.getAttribute("data-tab"))
 							})
-							return out;
+							live_now.forEach(function(id) {
+								menu.hidden_place.appendChild(menu.items[id])
+								pane.hidden_place.appendChild(pane.items[id])
+							})
+							
+
+
+							// show menu / pane set by selector
+							Object.keys(menu.items).forEach(function(id) {
+								if(tabs_list.indexOf(id) > -1) {
+									menu.live_place.appendChild(menu.items[id])
+									pane.live_place.appendChild(pane.items[id])
+								}
+							})
+
+							if(tabs_list.indexOf("daytime") > -1) {
+								if (!timeSlider) {
+									timeSlider = new rSlider({
+									    target: '#slider3',
+									    values: {min: 0, max: 24},
+									    step: 0.25,
+									    range: true,
+									    set: [8, 18],
+									    scale: true,
+									    labels: true,
+									    onChange: function (vals) {
+									        console.log(vals);
+									    }
+									});
+								}
+							}
+							if(!rangedDate) {
+								rangedDate = new Datepicker('#ranged', {
+								    inline: true,
+								    // ranged: true,
+								    multiple: true
+								  });
+							}
 						}
-					}
+						// setTimeout(makeTabs, 200)
+						
 
-					var cond_object = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-					var cond_param = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-					var cond_operator = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-					var cond_val = new ui.Textfield("900", { optional: false });
+						// Генерируем JS_объект defaultTemplates
+						var defaultTemplates = <%=util.serialize_json(default_templates) %>
 
-					var cond_logic = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-					var cond_object2 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-					var cond_param2 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-					var cond_operator2 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-					var cond_val2 = new ui.Textfield("60", { optional: false });
+						// store templates in local storage
+						session.setLocalData("default-alert-templates", defaultTemplates)
+						session.setLocalData("custom-alert-templates", defaultTemplates)
 
-					var cond_logic2 = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-					var cond_object3 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-					var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-					var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-					var cond_val3 = new ui.Textfield("15", { optional: false });
+						var alert_template = new ui.TextAreaHighlighted(defaultTemplates[event.getValue()][alert_method.getValue()], { 
+							optional: true,
+							datatype: "rangelength(0,256)",
+							readonly: true,
+							highlights: Object.keys(theAlert["template_param"]) });
+						var alert_template_widget = alert_template.render()
 
-					function updateDropdownLabel(dom_selector=".protected-time .cbi-dropdown") {
-						var ds = dom_selector + " span.more"
-						var selected_count = document.querySelectorAll(dom_selector + " input[type=hidden]").length
-						if (selected_count > 0) {
-							document.querySelector(ds).textContent = "Интервалы времени (%s)".format(selected_count)	
-						} else {
-							document.querySelector(ds).textContent = "Интервалы времени"	
+						var key = ""; // catch % key pressed
+						alert_template_widget.addEventListener('keyup', (event) => {
+							key = event.key || "Escape";
+							if(key == "Escape") {
+								tmpl_vars.closeAllDropdowns()
+								tmpl_vars_widget.parentNode.style.visibility = "hidden";
+							} else {
+								// save custom template to local storage
+								saveTmplCustom(alert_template.getValue())
+							}
+						});
+
+						// enable Custom / Default switcher
+						function allowTmplEdit() {
+							document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
+							document.querySelector("[name='tmpl-custom']").style.display = "block"
+							document.querySelector("[name='tmpl-default']").style.display = "block"
+							loadTmplCustom()
+						}
+						// load default templae to textarea
+						function loadTmplDefault(eventId=undefined, channelId=undefined) {
+							var tmpls = session.getLocalData("custom-alert-templates")
+							var evnt_id = eventId || event.getValue() || undefined
+							var chnl_id = channelId || alert_method.getValue() || undefined
+							alert_template.getTextArea().readOnly = true;
+
+							if(evnt_id && chnl_id) {
+								var storedTmpls = session.getLocalData("default-alert-templates")			
+								alert_template.setValue(storedTmpls[evnt_id][chnl_id])
+							} else {
+								alert_template.setValue("")
+							}
+
+							document.querySelector("[name='tmpl-custom']").style.backgroundImage = "none";
+							document.querySelector("[name='tmpl-default']").style.backgroundImage = "url(/luci-static/resources/icons/check-grey.png)";
+						}
+
+						// load custom template to textarea
+						function loadTmplCustom(eventId=undefined, channelId=undefined) {
+							var tmpls = session.getLocalData("custom-alert-templates")
+							var evnt_id = eventId || event.getValue() || undefined
+							var chnl_id = channelId || alert_method.getValue() || undefined
+							alert_template.getTextArea().readOnly = false;
+
+							if(evnt_id && chnl_id) {
+								var storedTmpls = session.getLocalData("custom-alert-templates")
+								alert_template.setValue(storedTmpls[evnt_id][chnl_id] + "\n")
+							} else {
+								alert_template.setValue("")
+							}
+							alert_template.getTextArea().focus()
+
+							document.querySelector("[name='tmpl-default']").style.backgroundImage = "none";
+							document.querySelector("[name='tmpl-custom']").style.backgroundImage = "url(/luci-static/resources/icons/check.png)";
+						}
+
+						function saveTmplCustom(tmpltext, eventId=undefined, channelId=undefined) {
+							var tmpls = session.getLocalData("custom-alert-templates")
+							var evnt_id = eventId || event.getValue() || "1"
+							var chnl_id = channelId || alert_method.getValue() || "sms"
+							tmpls[evnt_id][chnl_id] = tmpltext
+							session.setLocalData("custom-alert-templates", tmpls)
+						}
+
+
+						var already = false; // avoid fire event twice
+						function insertTmplVar() {
+							return	L.bind(function(ev) {
+								if(!already) {
+									already = true;
+									var tVar = tmpl_vars.getValue() || false
+									var pos = alert_template.getTextArea().selectionEnd;
+									if (pos >= 1 && tVar) {
+										var oldVal = alert_template.getValue();
+										var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
+										alert_template.setValue(newVal);
+										// save custom template to local storage
+										saveTmplCustom(newVal)
+										alert_template.getTextArea().focus();
+									}
+									tmpl_vars.setValue("")
+									tmpl_vars_widget.parentNode.style.visibility = "hidden";
+								}
+							})
 						}
 						
-					}
-					var protected_intervals = new ui.Dropdown(0, {
-						"daytime": "Дневной интервал",
-						"weekdays": "Дни недели",
-						"monthdays": "Дни месяца"
-					}, { 
-						multiple: true, 
-						select_placeholder: "Интервалы времени", 
-						display_items: 0
-					})
+						alert_template.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
+						alert_template_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
 
-					var protected_intervals_widget = protected_intervals.render()
-					protected_intervals.registerEvents(protected_intervals_widget, "time-interval-selected", ["cbi-dropdown-change"]);
-					protected_intervals_widget.addEventListener('time-interval-selected', L.bind(function(ev) { 
-						updateDropdownLabel()
-						if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
-							makeTabs(protected_intervals.getValue())
+						alert_template.registerEvents(event_widget, "event-selected", ["cbi-dropdown-change"]);
+						alert_template_widget.addEventListener('event-selected', L.bind(function(ev) { loadTmplDefault() }), false);
+
+						alert_template.registerEvents(alert_method_widget, "alert-method-selected", ["cbi-dropdown-change"]);
+						alert_template_widget.addEventListener('alert-method-selected', L.bind(function(ev) { loadTmplDefault() }), false);
+
+						tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
+						tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
+							already = false;
+							if(key == "Escape") {
+								tmpl_vars.closeAllDropdowns()
+								ev.target.parentNode.style.visibility = "hidden";
+							} else if(key=="%") {
+								var coordinates = getCaretCoordinates(alert_template.getTextArea(), alert_template.getTextArea().selectionEnd);
+								var scrollTextArea_Y = alert_template.getTextArea().scrollTop;
+								ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
+								ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
+								ev.target.parentNode.style.visibility = "visible";
+								key = "";
+							} else if(key != "Shift") {
+								ev.target.parentNode.style.visibility = "hidden";
+							}
+						}));
+						
+
+						var conditions = {
+							defaultLogics: {
+								and: "AND",
+								or: "OR"
+							},
+
+							logics: ["or"],
+							records: [
+								{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
+								{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
+							],
+							dropDownData: function(key) {
+								var out = {}
+								this.records.forEach(function(item, i, arr) {
+									out[item[key]] = item[key]
+								})
+								return out;
+							}
 						}
-					}), false);
+
+						var cond_object = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+						var cond_param = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+						var cond_operator = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+						var cond_val = new ui.Textfield("900", { optional: false });
+
+						var cond_logic = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
+						var cond_object2 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+						var cond_param2 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+						var cond_operator2 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+						var cond_val2 = new ui.Textfield("60", { optional: false });
+
+						var cond_logic2 = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
+						var cond_object3 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
+						var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
+						var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
+						var cond_val3 = new ui.Textfield("15", { optional: false });
+
+						function updateDropdownLabel(dom_selector=".protected-time .cbi-dropdown") {
+							var ds = dom_selector + " span.more"
+							var selected_count = document.querySelectorAll(dom_selector + " input[type=hidden]").length
+							if (selected_count > 0) {
+								document.querySelector(ds).textContent = "Интервалы времени (%s)".format(selected_count)	
+							} else {
+								document.querySelector(ds).textContent = "Интервалы времени"	
+							}
+							
+						}
+						var protected_intervals = new ui.Dropdown("", {
+							"Дневной интервал": "Дневной интервал",
+							"Дни недели": "Дни недели",
+							"Дни месяца": "Дни месяца"
+						}, { 
+							multiple: true, 
+							select_placeholder: "Интервалы времени", 
+							display_items: 0,
+							create: true
+						})
+
+						var protected_intervals_widget = protected_intervals.render()
+						protected_intervals.registerEvents(protected_intervals_widget, "time-interval-selected", ["cbi-dropdown-change"]);
+						protected_intervals_widget.addEventListener('time-interval-selected', L.bind(function(ev) { 
+							updateDropdownLabel()
+							if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
+								protected_intervals.getValue().forEach(function(tab_title) {
+									ui.tabs.timeFactory.addInterval(tab_title)
+								})
+							}
+						}), false);
 
 
 
-					var weekdays = new ui.DynamicList(["Пн","Вт","Ср","Чт","Пт"], {
-						"Пн": "Пн",
-						"Вт": "Вт",
-						"Ср": "Ср",
-						"Чт": "Чт",
-						"Пт": "Пт",
-						"Сб": "Сб",
-						"Вс": "Вс"
-					}, { optional: false, multiple: true, display_items: 7, create: false, readonly: true, sort: ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"] });
+						var everyPeriod = new ui.Select("0", {
+							"every_week": "Еженедельно",
+							"every_month": "Ежемесячно",
+							"every_year": "Ежегодно"
+						},
+						{
+							widget: "checkbox",
+							orientation: "horizontal",
+							multiple: true
+						})
+						var everyPeriod_widget = everyPeriod.render()
+
+						var timeIntervals = [
+						 	{
+						 		id: "moy_perviy_interval",
+						 		title: "Мой первый интервал",
+						 		dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
+						 		times: [ "18:00-08:00", "12:00-13:00" ],
+						 		repeat_mode: "monthly", // yearly, weekly, daily
+						 	}
+						]
+
+						
+
+						/*************************************/
+						// Save time intervals in local storage
+						/*	var timeIntervals = [
+						 *		{
+						 *			id: "moy_perviy_interval",
+						 *			title: "Мой первый интервал",
+						 *			dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
+						 *			times: [ "18:00-08:00", "12:00-13:00" ],
+						 *			repeat_mode: "monthly", // yearly, weekly, daily
+						 *		}
+						 *	]
+						 */
+						// session.setLocalData("time-intervals", timeIntervals)
+
+						ui.tabs.timeFactory = {}
+						ui.tabs.timeFactory["time_sliders"] = {}
+						ui.tabs.timeFactory["addInterval"] = function(interval={}) {
+							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
+							time_interval["id"] = slug(time_interval["title"])
+
+							var slider_setting = {
+								values: { min: 0, max: 24 },
+								step: 0.25,
+							    range: true,
+							    set: [10, 19],
+							    scale: true,
+							    labels: true
+							}
+							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
+							var rSlider_widget = rSlider.render()
 
 
-
-
-					// Open modal
-					L.showModal('Настройка автоматического уведомления', [
-						E('div', { class: 'cbi-map alert-setting', 'style': "margin-top: 1em;" }, [
-							E('div', { class: 'cbi-map-section' }, [
-								E('div', { class: 'cbi-map-section-node' }, [
-									E('div', { class: 'cbi-value' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Активно') + ":"),
-										E('div', { class: 'cbi-value-field' }, [
-											active.render()
+							var panes_group_location = document.querySelector(".protected-time .protected-time-panes")
+							var paneTemplate = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
+								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
+								E('table', {border: "1", style: "width: 100%"}, [
+									E('tr', {}, [
+										E('td', {width: "45%", valign: "top"}, [
+											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
+											everyPeriod_widget
+										]),
+										E('td', {width: "55%", valign: "top"}, [
+											rSlider_widget
 										])
-									]),
-									E('div', { class: 'cbi-value' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'margin-top: -10px; padding-right:2rem;' }, _('Отправить уведомлении если') + ":"),
-										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-											event_widget,
-											"        используя: ",
-											alert_method_widget,
-										]),
-									]),
+									])
+								])
+							])
 
-									E('div', { class: 'cbi-value' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
-											_('Шаблон уведомления') + ":",
-											E('br'),
-											E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Используйте символ % для выбора параметра из списка.')),
+							panes_group_location.appendChild(paneTemplate)
+							console.log(panes_group_location.children.length)
+							ui.tabs.initTabGroup(panes_group_location.childNodes)
+
+
+							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
+							    inline: true,
+							    // ranged: true,
+							    multiple: true
+							  });
+							  
+						}
+
+
+
+
+
+						// Open modal
+						L.showModal('Настройка автоматического уведомления', [
+							E('div', { class: 'cbi-map alert-setting', 'style': "margin-top: 1em;" }, [
+								E('div', { class: 'cbi-map-section' }, [
+									E('div', { class: 'cbi-map-section-node' }, [
+										E('div', { class: 'cbi-value' }, [
+											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Активно') + ":"),
+											E('div', { class: 'cbi-value-field' }, [
+												active.render()
+											])
 										]),
-										E('div', { class: 'cbi-value-field message-template' }, [
-											alert_template_widget,
-											E('a', { 
-													name: 'allow-tmpl-edit',
-													style: 'text-decoration: underline; float: right; cursor: pointer;',
+										E('div', { class: 'cbi-value' }, [
+											E('label', { 'class': 'cbi-value-title', 'style': 'margin-top: -10px; padding-right:2rem;' }, _('Отправить уведомлении если') + ":"),
+											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+												event_widget,
+												"        используя: ",
+												alert_method_widget,
+											]),
+										]),
+
+										E('div', { class: 'cbi-value' }, [
+											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
+												_('Шаблон уведомления') + ":",
+												E('br'),
+												E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Используйте символ % для выбора параметра из списка.')),
+											]),
+											E('div', { class: 'cbi-value-field message-template' }, [
+												alert_template_widget,
+												E('a', { 
+														name: 'allow-tmpl-edit',
+														style: 'text-decoration: underline; float: right; cursor: pointer;',
+														click: ui.createHandlerFn(this, function() {
+															return allowTmplEdit();
+														})
+													}, _('Редактировать шаблон')),
+												E('a', { 
+														name: 'tmpl-default',
+														style: 'color: grey;',
+														click: ui.createHandlerFn(this, function() {
+															return loadTmplDefault();
+														})
+													}, _('Default')),
+													E('a', { 
+														name: 'tmpl-custom',
+														style: '',
+														click: ui.createHandlerFn(this, function() {
+															return loadTmplCustom();
+														})
+													}, _('Custom')),
+
+											]),
+											/* Виджет для выбра и подстановки парамтеров в шаблон */
+											E('div', { class: '', style: 'width: auto; position: absolute; left: 50px; visibility: hidden;' }, [
+												tmpl_vars_widget
+											]),
+										]),
+										E('div', { class: 'cbi-value alert-condition' }, [
+											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
+											E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
+												E('div', {class: 'first-condition-row'}, [
+													E('p', {class: 'small-lable'}, "Логика"),
+													cond_logic.render(),
+												]),
+												E('div', {class: 'first-condition-row'}, [
+													E('p', {class: 'small-lable'}, "Объект"),
+													cond_object.render(),
+												]),
+												E('div', {class: 'first-condition-row'}, [
+													E('p', {class: 'small-lable'}, "Атрибут"),
+													cond_param.render(),
+												]),
+												E('div', {class: 'first-condition-row'}, [
+													E('p', {class: 'small-lable'}, "Оператор"),
+													cond_operator.render(),
+												]),
+												
+												E('div', {class: 'first-condition-row'}, [
+													E('p', {class: 'small-lable'}, "Значение"),
+													cond_val.render(),
+												]),
+												E('a', { 
+													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
 													click: ui.createHandlerFn(this, function() {
 														return allowTmplEdit();
 													})
-												}, _('Редактировать шаблон')),
-											E('a', { 
-													name: 'tmpl-default',
-													style: 'color: grey;',
-													click: ui.createHandlerFn(this, function() {
-														return loadTmplDefault();
-													})
-												}, _('Default')),
-												E('a', { 
-													name: 'tmpl-custom',
-													style: '',
-													click: ui.createHandlerFn(this, function() {
-														return loadTmplCustom();
-													})
-												}, _('Custom')),
-
-										]),
-										/* Виджет для выбра и подстановки парамтеров в шаблон */
-										E('div', { class: '', style: 'width: auto; position: absolute; left: 50px; visibility: hidden;' }, [
-											tmpl_vars_widget
-										]),
-									]),
-									E('div', { class: 'cbi-value alert-condition' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
-										E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
-											E('div', {class: 'first-condition-row'}, [
-												E('p', {class: 'small-lable'}, "Логика"),
+												}, _('Удалить')),
+											]),
+											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
 												cond_logic.render(),
-											]),
-											E('div', {class: 'first-condition-row'}, [
-												E('p', {class: 'small-lable'}, "Объект"),
-												cond_object.render(),
-											]),
-											E('div', {class: 'first-condition-row'}, [
-												E('p', {class: 'small-lable'}, "Атрибут"),
-												cond_param.render(),
-											]),
-											E('div', {class: 'first-condition-row'}, [
-												E('p', {class: 'small-lable'}, "Оператор"),
-												cond_operator.render(),
-											]),
-											
-											E('div', {class: 'first-condition-row'}, [
-												E('p', {class: 'small-lable'}, "Значение"),
-												cond_val.render(),
-											]),
-											E('a', { 
-												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-												click: ui.createHandlerFn(this, function() {
-													return allowTmplEdit();
-												})
-											}, _('Удалить')),
-										]),
-										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-											cond_logic.render(),
-											cond_object2.render(),
-											cond_param2.render(),
-											cond_operator2.render(),
-											E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-												cond_val2.render(),
-											]),
-											E('a', { 
-												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-												click: ui.createHandlerFn(this, function() {
-													return allowTmplEdit();
-												})
-											}, _('Удалить')),
-										]),
-										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-											cond_logic2.render(),
-											cond_object3.render(),
-											cond_param3.render(),
-											cond_operator3.render(),
-											E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-												cond_val3.render(),
-											]),
-											E('a', { 
-												style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-												click: ui.createHandlerFn(this, function() {
-													return allowTmplEdit();
-												})
-											}, _('Удалить')),
-										]),
-										E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-											E('a', { 
-												style: 'text-decoration: underline; cursor: pointer;',
-												click: ui.createHandlerFn(this, function() {
-													return allowTmplEdit();
-												})
-											}, _('Добавить условие')),
-										]),
-									]),
-									E('div', { class: 'cbi-value' }, [
-										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
-											_('Запретить отправку') + ":",
-											E('br'),
-											E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Укажите интервалы времени когда запрещено отправлять данное уведомление.')
-											)
-										]),
-										E('div', { class: 'cbi-value-field protected-time', style: 'width: 75%' }, [
-											protected_intervals_widget,
-											E('div', { class: "hidden-menu-container", style: "display: none "}, []),
-											E('div', { class: "hidden-pane-container", style: "display: none "}, []),
-											E('div', { class: "protected-time-panes" }, [
-												E('div', { class: "cbi-tab-descr", "data-tab": "daytime", "data-tab-title": "Дневной интервал", "data-tab-active": true }, [
-													E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
-													E('div', {class: "container"}, [
-														E('div', {class: "slider-container"}, [
-															E('input', {type: "text", id: "slider3", class: "slider"})
-														])
-													])
+												cond_object2.render(),
+												cond_param2.render(),
+												cond_operator2.render(),
+												E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
+													cond_val2.render(),
 												]),
-												E('div', { class: "cbi-tab-descr", "data-tab": "weekdays", "data-tab-title": "Дни недели" }, [
-													E('p', {}, "Недельный интервал")
+												E('a', { 
+													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+													click: ui.createHandlerFn(this, function() {
+														return allowTmplEdit();
+													})
+												}, _('Удалить')),
+											]),
+											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+												cond_logic2.render(),
+												cond_object3.render(),
+												cond_param3.render(),
+												cond_operator3.render(),
+												E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
+													cond_val3.render(),
 												]),
-												E('div', { class: "cbi-tab-descr", "data-tab": "monthdays", "data-tab-title": "Дни месяца" }, [
-													E('p', {}, "Месячный интервал")
+												E('a', { 
+													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+													click: ui.createHandlerFn(this, function() {
+														return allowTmplEdit();
+													})
+												}, _('Удалить')),
+											]),
+											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
+												E('a', { 
+													style: 'text-decoration: underline; cursor: pointer;',
+													click: ui.createHandlerFn(this, function() {
+														return allowTmplEdit();
+													})
+												}, _('Добавить условие')),
+											]),
+										]),
+										E('div', { class: 'cbi-value' }, [
+											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
+												_('Запретить отправку') + ":",
+												E('br'),
+												E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Укажите интервалы времени когда запрещено отправлять данное уведомление.')
+												)
+											]),
+											E('div', { class: 'cbi-value-field protected-time', style: 'width: 75%' }, [
+												protected_intervals_widget,
+												E('div', { class: "protected-time-panes" }, [
+													// place panes here
 												])
 											])
-										])
-									]),
+										]),
+									])
 								])
+							]),
+							E('div', { class: 'cbi-value-field', style: 'margin-top: 30px; margin-bottom: 30px;' }, [
+								E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+								' ',
+								E('div', { class: 'btn success', "name": "apply",
+									'click': ui.createHandlerFn(this, function() {
+											return handleSaveAlert();
+										
+									})
+								}, _('Сохранить'))
 							])
-						]),
-						E('div', { class: 'cbi-value-field', style: 'margin-top: 30px; margin-bottom: 30px;' }, [
-							E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
-							' ',
-							E('div', { class: 'btn success', "name": "apply",
-								'click': ui.createHandlerFn(this, function() {
-										return handleSaveAlert();
-									
-								})
-							}, _('Сохранить'))
-						])
-					]);
-				})	
+						]);
+					})	
+				})
 			})
-		})	
+		})
 	})
 }
 function handleSaveAlert(handleSaveAlert) {
