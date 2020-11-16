@@ -381,6 +381,9 @@ function edit_alert(btn) {
 							}
 							
 						}
+
+
+
 						var protected_intervals = new ui.Dropdown("", {
 							"Дневной интервал": "Дневной интервал",
 							"Дни недели": "Дни недели",
@@ -392,30 +395,59 @@ function edit_alert(btn) {
 							create: true
 						})
 
+
+
+						// method was overriden because of original one splits create-input string by space to several substrings
+						protected_intervals.createItems = function(sb, value) {
+							var sbox = this,
+							    val = (value || '').trim(),
+							    ul = sb.querySelector('ul');
+
+							val = val.length ? [val] : [];
+
+							val.forEach(function(item) {
+								var new_item = null;
+
+								ul.childNodes.forEach(function(li) {
+									if (li.getAttribute && li.getAttribute('data-value') === item)
+										new_item = li;
+								});
+
+								if (!new_item) {
+									new_item = sbox.createChoiceElement(sb, item);
+
+									if (!sbox.options.multiple) {
+										var old = ul.querySelector('li[created]');
+										if (old)
+											ul.removeChild(old);
+
+										new_item.setAttribute('created', '');
+									}
+
+									new_item = ul.insertBefore(new_item, ul.lastElementChild);
+								}
+
+								sbox.toggleItem(sb, new_item, true);
+								sbox.setFocus(sb, new_item, true);
+							});
+						};
+
 						var protected_intervals_widget = protected_intervals.render()
 						protected_intervals.registerEvents(protected_intervals_widget, "time-interval-selected", ["cbi-dropdown-change"]);
 						protected_intervals_widget.addEventListener('time-interval-selected', L.bind(function(ev) { 
 							updateDropdownLabel()
 							if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
 								protected_intervals.getValue().forEach(function(tab_title) {
-									ui.tabs.timeFactory.addInterval(tab_title)
+									// ui.tabs.timeFactory.addInterval(tab_title)
+									console.log("---------")
+									console.log(protected_intervals.getValue())
+									ui.tabs.addTab(tab_title)
 								})
 							}
 						}), false);
 
 
 
-						var everyPeriod = new ui.Select("0", {
-							"every_week": "Еженедельно",
-							"every_month": "Ежемесячно",
-							"every_year": "Ежегодно"
-						},
-						{
-							widget: "checkbox",
-							orientation: "horizontal",
-							multiple: true
-						})
-						var everyPeriod_widget = everyPeriod.render()
 
 						var timeIntervals = [
 						 	{
@@ -443,8 +475,106 @@ function edit_alert(btn) {
 						 */
 						// session.setLocalData("time-intervals", timeIntervals)
 
+						ui.tabs.addTab = function(interval) {
+							var group = document.querySelector(".protected-time .protected-time-panes"),
+								menu = document.querySelector(".protected-time .cbi-tabmenu"),
+							    groupId = +group.getAttribute('data-tab-group');
+
+							group.setAttribute('data-initialized', false);
+
+							if(group.childNodes.length == 0) {
+								ui.tabs.timeFactory.addInterval(interval)
+								group.setAttribute('data-initialized', true);
+								return
+							}
+
+							for(var i=0; i < group.childNodes.length; i++) {
+								if(group.childNodes[i].getAttribute("data-tab-title") == interval) {
+									return
+								}
+							}
+
+
+							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
+							time_interval["id"] = slug(time_interval["title"])
+
+							var slider_setting = {
+								values: { min: 0, max: 24 },
+								step: 0.25,
+							    range: true,
+							    set: [10, 19],
+							    scale: true,
+							    labels: true
+							}
+							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
+							var rSlider_widget = rSlider.render()
+
+
+							var everyPeriod = new ui.Select("0", {
+								"every_week": "Еженедельно",
+								"every_month": "Ежемесячно",
+								"every_year": "Ежегодно"
+							},
+							{
+								widget: "checkbox",
+								orientation: "horizontal",
+								multiple: true
+							})
+							var everyPeriod_widget = everyPeriod.render()
+
+
+							var pane = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
+								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
+								E('table', {border: "1", style: "width: 100%"}, [
+									E('tr', {}, [
+										E('td', {width: "45%", valign: "top"}, [
+											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
+											everyPeriod_widget
+										]),
+										E('td', {width: "55%", valign: "top"}, [
+											rSlider_widget
+										])
+									])
+								])
+							])
+
+
+
+							var name = pane.getAttribute('data-tab'),
+							    title = pane.getAttribute('data-tab-title'),
+							    active = false;
+
+
+							menu.appendChild(E('li', {
+								'style': this.isEmptyPane(pane) ? 'display:none' : null,
+								'class': active ? 'cbi-tab' : 'cbi-tab-disabled',
+								'data-tab': name
+							}, E('a', {
+								'href': '#',
+								'click': this.switchTab.bind(this)
+							}, title)));
+
+							group.appendChild(pane);
+							group.setAttribute('data-initialized', true);
+							pane.setAttribute('data-tab-active', 'false');
+
+
+							pane.dispatchEvent(new CustomEvent('cbi-tab-active', {
+								detail: { tab: pane.getAttribute('data-tab') }
+							}));
+
+
+							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
+							    inline: true,
+							    // ranged: true,
+							    multiple: true
+							});
+
+							//this.updateTabs(group);
+						};
+
 						ui.tabs.timeFactory = {}
-						ui.tabs.timeFactory["time_sliders"] = {}
+						ui.tabs.timeFactory["time_sliders"] = []
 						ui.tabs.timeFactory["addInterval"] = function(interval={}) {
 							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
 							time_interval["id"] = slug(time_interval["title"])
@@ -459,6 +589,18 @@ function edit_alert(btn) {
 							}
 							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
 							var rSlider_widget = rSlider.render()
+
+							var everyPeriod = new ui.Select("0", {
+								"every_week": "Еженедельно",
+								"every_month": "Ежемесячно",
+								"every_year": "Ежегодно"
+							},
+							{
+								widget: "checkbox",
+								orientation: "horizontal",
+								multiple: true
+							})
+							var everyPeriod_widget = everyPeriod.render()
 
 
 							var panes_group_location = document.querySelector(".protected-time .protected-time-panes")
@@ -477,8 +619,21 @@ function edit_alert(btn) {
 								])
 							])
 
-							panes_group_location.appendChild(paneTemplate)
-							console.log(panes_group_location.children.length)
+							ui.tabs.timeFactory["time_sliders"][time_interval["id"]] = paneTemplate;
+							panes_group_location.childNodes.forEach(function(node){
+								if(node.getAttribute("data-tab") in ui.tabs.timeFactory["time_sliders"]) {
+									delete ui.tabs.timeFactory["time_sliders"][node.getAttribute("data-tab")]
+								}
+							})
+							for(id in ui.tabs.timeFactory["time_sliders"]) {
+								// console.log("append ..")
+								// console.log(ui.tabs.timeFactory["time_sliders"][id])
+								dom.append(panes_group_location, ui.tabs.timeFactory["time_sliders"][id])	
+							}
+							
+							// panes_group_location.appendChild(paneTemplate)
+							//setInterval(ui.tabs.initTabGroup, 1000, panes_group_location.childNodes)
+							// console.log(panes_group_location.childNodes)
 							ui.tabs.initTabGroup(panes_group_location.childNodes)
 
 
@@ -629,7 +784,7 @@ function edit_alert(btn) {
 											]),
 											E('div', { class: 'cbi-value-field protected-time', style: 'width: 75%' }, [
 												protected_intervals_widget,
-												E('div', { class: "protected-time-panes" }, [
+												E('div', { class: "protected-time-panes cbi-section-node cbi-section-node-tabbed" }, [
 													// place panes here
 												])
 											])

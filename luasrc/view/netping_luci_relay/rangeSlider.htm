@@ -62,9 +62,9 @@ L.require('ui').then(function(ui) {
 				])
 				this.scale = E('div', { class: 'rs-scale' })
 				this.result_message = E('div', { class: 'rs-result-message' })
-				this.addLink = E('a', { class: "rs-add-new-slider" }, _("Добавить"))
-				var delDisplay = (document.querySelector(".protected-time .protected-time-panes").children.length > 0) ? '' : 'none'
-				this.delLink = E('a', { class: "rs-remove-the-slider", style: "display: %h".format(delDisplay)}, _("Удалить"))
+				this.addLink = E('a', { class: "rs-add-new-slider", style: "cursor: pointer;"}, _("Добавить"))
+				this.delLink = E('a', { class: "rs-remove-the-slider", style: "margin-right: 1em; cursor: pointer;" }, _("Удалить"))
+
 				this.slider = E('div', { class: 'rs-container' }, [
 					E('div', { class: "rs-bg" }),
 					this.selected,
