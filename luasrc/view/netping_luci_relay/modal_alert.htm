@@ -467,15 +467,14 @@ function edit_alert(btn) {
 						window.timeIntervals = {}
 						/*************************************/
 						// Save time intervals in local storage
-						/*	var timeIntervals = [
-						 *		{
-						 *			id: "moy_perviy_interval",
+						/*	var timeIntervals = {
+						 *		"moy_perviy_interval": {
 						 *			title: "Мой первый интервал",
 						 *			dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
-						 *			times: [ "18:00-08:00", "12:00-13:00" ],
-						 *			repeat_mode: "monthly", // yearly, weekly, daily
+						 *			times: [ "6.15-18", "12-13" ],
+						 *			repeat_mode: ["Ежемесячно", "Ежегодно", "Еженедельно", "Ежедневно"]
 						 *		}
-						 *	]
+						 *	}
 						 */
 						// session.setLocalData("time-intervals", timeIntervals)
 
@@ -517,12 +516,17 @@ function edit_alert(btn) {
 									'_time-slider-changed'
 								],
 								function(ev) {
-									// some custom staff
-									// when 'time-slider-changed' event occured
-									console.log("rSlider")
-									var t = rSlider.getValue().split(",")
-									console.log(rSlider.formatTime(t[0]) + " до " + rSlider.formatTime(t[1]))
-									// window.timeIntervals[rSlider.tab_id]["times"].push(rSlider.getValue())
+									var tab = rSlider.tab_idref,
+										title = rSlider.tab_title
+									window.EventBus.addTimeRange(rSlider.getValue(), tab, title)
+								}
+							);
+
+							window.EventBus.register(rSlider_widget, 'time-slider-removed', [
+									'_time-slider-removed'
+								],
+								function(ev) {
+									console.log("REMOVED 2")
 								}
 							);
 
@@ -552,10 +556,9 @@ function edit_alert(btn) {
 									'change'
 								],
 								function(ev) {
-									// some custom staff
-									// when 'time-slider-changed' event occured
-									console.log("everyPeriod")
-									console.log(everyPeriod.getValue())
+									var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+									var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+									window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
 								}
 							);
 
@@ -632,15 +635,20 @@ function edit_alert(btn) {
 									'_time-slider-changed'
 								],
 								function(ev) {
-									// some custom staff
-									// when 'time-slider-changed' event occured
-									console.log("rSlider")
-									var t = rSlider.getValue().split(",")
-									console.log(rSlider.formatTime(t[0]) + " до " + rSlider.formatTime(t[1]))
-									// window.timeIntervals[rSlider.tab_id]["times"].push(rSlider.getValue())
+									var tab = rSlider.tab_idref,
+										title = rSlider.tab_title,
+										slider_id = rSlider.idref;
+									window.EventBus.addTimeRange(rSlider.getValue(), tab, title, slider_id)
 								}
 							);
 
+							window.EventBus.register(rSlider_widget, 'time-slider-removed', [
+									'_time-slider-removed'
+								],
+								function(ev) {
+									console.log("REMOVED")
+								}
+							);
 
 							var everyPeriod = new ui.Select("0", {
 								"Еженедельно": "Еженедельно",
@@ -666,10 +674,9 @@ function edit_alert(btn) {
 									'change'
 								],
 								function(ev) {
-									// some custom staff
-									// when 'time-slider-changed' event occured
-									console.log("everyPeriod")
-									console.log(everyPeriod.getValue())
+									var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+									var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+									window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
 								}
 							);
 

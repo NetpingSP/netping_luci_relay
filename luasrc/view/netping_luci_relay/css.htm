@@ -148,4 +148,20 @@ a[name='tmpl-default'], a[name='tmpl-custom'] {
 	background-repeat: no-repeat;
 }
 
+/* content of NotesBanner */
+@supports (display: grid) {  
+  @media (min-width: 14em) {  
+    .rs-result-message dl {
+      display: grid;
+      grid-template-columns: auto 1fr; 
+    }
+    .rs-result-message dt {
+      min-width: 0; 
+    }
+    .rs-result-message dd {
+      margin: 0 0 0 1em;
+    }
+  }
+}
+
 </style>

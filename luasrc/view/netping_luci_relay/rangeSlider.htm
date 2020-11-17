@@ -25,6 +25,7 @@ L.require('ui').then(function(ui) {
 					this.addLink		= null;
 					this.delLink		= null;
 					this.tab_idref		= null;
+					this.tab_title		= null;
 					this.idref 			= null;
 
 					this.options = Object.assign({
@@ -99,29 +100,65 @@ L.require('ui').then(function(ui) {
 					    labels: true
 					}
 					
+
 					function showBanner(self) {
 						var notesBanner = window.BUS["notesBanner"]	
-						notesBanner.setValue(notesBanner.getValue() + "<span style='display: block;' data-source='" + self.idref + "'>" + self.getValue() + " " + self.idref + "</span>")
 						notesBanner.show()
-						notesBanner.eventDispatcher('widget-remove', self, notesBanner)
+						// notesBanner.eventDispatcher('_time-slider-removed', self, notesBanner)
 					}
 					setTimeout(showBanner, 1000, this)
-					
-/*
-					this.node.addEventListener('_time-slider-created', L.bind(function(ev) { 
+
+
+
+
+					this.node.addEventListener('_time-slider-created', L.bind(function(ev) {
 						var sPlace = ev.target.parentNode
 						var rs = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
-						dom.append(sPlace, rs.render())
-						var notesBanner = window.BUS["notesBanner"]
+						var rs_widget = rs.render()
+						dom.append(sPlace, rs_widget)
+						
+						window.EventBus.register(rs_widget, 'time-slider-changed', [
+								'_time-slider-created', 
+								'_time-slider-changed',
+//								'_time-slider-removed'
+							],
+							function(ev) {
+								console.log(ev)
+								function delayed() {
+									var tab = rs.tab_idref,
+										title = rs.tab_title,
+										slider_id = rs.idref;
+									window.EventBus.addTimeRange(rs.getValue(), tab, title, slider_id)
+								}
+								setTimeout(delayed, 200)
+							}
+						);
 
-						setTimeout(notesBanner.eventDispatcher, 200, '_time-slider-created', rs, notesBanner)
-					}))
+						window.EventBus.register(this.node, 'time-slider-removed', [
+								'_time-slider-removed'
+							],
+							function(ev) {
+								console.log("DELAYED")
+								console.log(this)
+								
+								var tab = this.tab_idref,
+									slider_id = this.idref;
+								window.EventBus.removeTimeRange(tab, slider_id)
+								
+							}
+						);
 
-					this.node.addEventListener('widget-remove', L.bind(function(ev) { 
-						console.log("I'm removed " + this.idref)
-						ev.target.remove()
 					}, this))
-*/
+
+
+					this.node.addEventListener('_time-slider-removed', L.bind(function(ev) { 
+						
+						window.EventBus.removeTimeRange(this.tab_idref, this.idref)
+						// ev.target.remove()
+					}, this))
+
+
+
 
 					this.rendered_widget = frameEl
 					setTimeout(this.setInitialValues, 200, this)
@@ -180,7 +217,8 @@ L.require('ui').then(function(ui) {
 					// keep idref of slider
 					// and data-tab as data_id
 					self.idref = self.node.getAttribute("data-idref")
-					self.tab_id = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+					self.tab_idref = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+					self.tab_title = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
 
 					return self.createScale();
 				},
@@ -243,7 +281,7 @@ L.require('ui').then(function(ui) {
 
 					// add event for "add new slider" and "delete this slider"
 					this.registerEvents(this.addLink, '_time-slider-created', ["click"]);
-					this.registerEvents(this.delLink, 'widget-remove', ["click"]);
+					this.registerEvents(this.delLink, '_time-slider-removed', ["click"]);
 					this.registerEvents(this.input, '_time-slider-changed', ["input"]);
 
 					return this.setValues();
@@ -333,7 +371,6 @@ L.require('ui').then(function(ui) {
 						this.selected_to_end.style.left = this.values.start * this.step + 'px';		
 					}
 
-
 					// fire 'input' event
 					this.input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
 					
@@ -364,13 +401,12 @@ L.require('ui').then(function(ui) {
 
 				onChange: function () {
 					var _this = this;
-
 					if (this.timeout) clearTimeout(this.timeout);
 
 					this.timeout = setTimeout(function () {
-						if (_this.options.onChange && typeof _this.options.onChange === 'function') {			
-							return _this.options.onChange(_this.input.value);
-						}
+						// fire 'input' event
+						// _this.input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+
 					}, 500);
 					return this.slider;
 				},

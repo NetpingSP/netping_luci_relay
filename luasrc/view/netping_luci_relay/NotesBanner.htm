@@ -33,15 +33,37 @@ L.require('ui').then(function(ui) {
 					this.setValue(this.value)
 					this.hide()
 
-
 					this.registerEvents(window.EventBus.node, "times-dates-changed", [
 						'time-slider-changed',
 						'every-period-changed'
 					])
 
 					this.node.addEventListener("times-dates-changed", L.bind(function(ev){
-						console.log(window.timeIntervals)
-					}))
+						// do with delay because EventBus.addEventListener() has higher priority
+						function publish(_this) {
+							var tf = window.EventBus.timeframe,
+								content = "",
+								tRanges = [],
+								repeat = [],
+								out = [];
+
+							for(tab in tf) {
+								tRanges = Object.values(tf[tab].timeranges).map(function(t) {
+									var s = _this.formatTime(t.split(",")[0]);
+									var e = _this.formatTime(t.split(",")[1]);
+									return "c " + s + " до " + e
+								}, _this)
+								repeat = tf[tab].repeat_mode || []
+								out = tRanges.concat(repeat)
+								content += "<dt>%h:".format(tf[tab].title)
+								content += "<dd>%h".format(out.join(", "))
+							}
+							content = "<h4>Запретить отправку уведомлений</h4><dl>%s</dl>".format(content)
+							_this.setValue(content)	
+						}
+						setTimeout(publish, 200, this)
+						
+					}, this))
 
 
 					return divEl;
@@ -64,6 +86,11 @@ L.require('ui').then(function(ui) {
 
 				hide: function() {
 					this.node.style.display = "none";
+				},
+
+				formatTime: function (hours) {
+						var minutes = "000000" + (hours - Math.floor(hours)) * 60
+					return Math.floor(hours) + ":" + minutes.substr(minutes.length-2);
 				},
 
 				// gather data from control widgets

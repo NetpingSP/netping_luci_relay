@@ -5,7 +5,17 @@ L.require('ui').then(function(ui) {
 		L.require('dom').then(function(dom) {
 			var UIEventBus = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
 				__init__: function() {
+					this.timeframe = {}
 				},
+				/*	this.timeframe: {
+				 *		"moy_perviy_interval": {
+				 *			title: "Мой первый интервал",
+				 *			dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
+				 *			timeranges: {"<slider_idref_1>": "6.15-18", "<slider_idref_2>": "8-18"},
+				 *			repeat_mode: ["Ежемесячно", "Ежегодно", "Еженедельно", "Ежедневно"]
+				 *		}
+				 *	}
+				 */
 
 				/** @override */
 				render: function() {
@@ -41,6 +51,23 @@ L.require('ui').then(function(ui) {
 					*/
 					return divEl;
 				},
+				addTimeRange: function(start_end="", tab_id="", tab_title="", slider_id="") {
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
+					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = {}
+					console.log("slider_id " + slider_id)
+					this.timeframe[tab_id]["timeranges"][slider_id] = start_end
+				},
+				removeTimeRange: function(tab_id="", slider_id="") {
+					if ((tab_id in this.timeframe) && (slider_id in this.timeframe[tab_id]["timeranges"])) {
+						delete this.timeframe[tab_id]["timeranges"][slider_id]
+					}
+				},
+				addRepeatMode: function(repeat=[], tab_id="", tab_title="") {
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
+					if (!("repeat_mode" in this.timeframe[tab_id])) this.timeframe[tab_id]["repeat_mode"] = []
+					this.timeframe[tab_id]["repeat_mode"] = repeat
+				},
+
 				register: function(source, eventName, sourceEvents=[], callback) {
 					this.registerEvents(source, eventName, sourceEvents)
 					this.node.addEventListener(eventName, L.bind(function(ev) { 
