@@ -1,0 +1,100 @@
+<script type="text/javascript">
+//<![CDATA[
+L.require('ui').then(function(ui) {
+	L.require("session").then(function(session){
+		L.require('dom').then(function(dom) {
+			var UINotesBanner = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
+				__init__: function(value, options) {
+					this.value = value;
+					this.options = Object.assign({
+
+					}, options);
+				},
+
+				/** @override */
+				render: function() {
+					var divEl = E('div', {
+						class: 'rs-result-message'
+					});
+
+					return this.bind(divEl);
+				},
+
+				/** @private */
+				bind: function(divEl) {
+					this.node = divEl;
+					if("BUS" in window) {
+						window.BUS["notesBanner"] = this
+					} else {
+						window.BUS = {}
+						window.BUS["notesBanner"] = this
+					}
+					dom.bindClassInstance(divEl, this);
+					this.setValue(this.value)
+					this.hide()
+
+
+					this.registerEvents(window.EventBus.node, "times-dates-changed", [
+						'time-slider-changed',
+						'every-period-changed'
+					])
+
+					this.node.addEventListener("times-dates-changed", L.bind(function(ev){
+						console.log(window.timeIntervals)
+					}))
+
+
+					return divEl;
+				},
+
+				/** @override */
+				getValue: function() {
+					return this.node.innerHTML;
+				},
+
+				/** @override */
+				setValue: function(value) {
+					this.node.innerHTML = value;
+				},
+
+				/** @override */
+				show: function() {
+					this.node.style.display = "";
+				},
+
+				hide: function() {
+					this.node.style.display = "none";
+				},
+
+				// gather data from control widgets
+				eventDispatcher: function(event_from_widget, source, self) {
+					switch(event_from_widget) {
+						case("widget-clone"): {
+							self.registerEvents(source.node, "add-time-slider", ["widget-clone"]);
+							self.node.addEventListener("add-time-slider", L.bind(function(ev) { 
+								console.log("ADDDD: ")
+								self.show()
+								self.setValue(self.getValue() + "<span style='display: block;' data-source='" + source.idref + "'>" + source.getValue() + " " + source.idref + "</span>")
+							}, self));
+							break;
+						}
+						case("widget-remove"): {
+							self.registerEvents(source.node, "remove-time-slider", ["widget-remove"]);
+							self.node.addEventListener("remove-time-slider", L.bind(function(ev) { 
+								self.show()
+								console.log("DEELETE: " + source.idref)
+								var whatToDel = self.node.querySelector("[data-source='" + source.idref + "']")
+								if(whatToDel) self.node.removeChild(whatToDel)
+								if(self.node.children.length <= 1) self.hide()
+							}, self));
+						}
+						default: {}
+					}
+				}
+			});
+			ui["NotesBanner"] = UINotesBanner;
+		});
+	});
+});
+//]]>
+</script>

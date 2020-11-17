@@ -99,6 +99,9 @@ function edit_alert(btn) {
 				L.require("uci").then(function(uci) {
 					uci.load("settings").then(function(out){
 
+						window.EventBus = new ui.EventBus()
+						var EventBus_widget = window.EventBus.render()
+
 						var active = new ui.Checkbox(theAlert["enabled"]);
 
 						var event = new ui.Dropdown("error", possibleEvents, { optional: false });
@@ -198,7 +201,7 @@ function edit_alert(btn) {
 							if(!rangedDate) {
 								rangedDate = new Datepicker('#ranged', {
 								    inline: true,
-								    // ranged: true,
+								    ranged: true,
 								    multiple: true
 								  });
 							}
@@ -385,12 +388,12 @@ function edit_alert(btn) {
 
 
 						var protected_intervals = new ui.Dropdown("", {
-							"Дневной интервал": "Дневной интервал",
-							"Дни недели": "Дни недели",
-							"Дни месяца": "Дни месяца"
+							"По ночам": "По ночам",
+							"По дням недели": "По дням недели",
+							"По дням месяца": "По дням месяца"
 						}, { 
 							multiple: true, 
-							select_placeholder: "Интервалы времени", 
+							select_placeholder: "Запретить отправку уведомлений", 
 							display_items: 0,
 							create: true
 						})
@@ -438,29 +441,30 @@ function edit_alert(btn) {
 							updateDropdownLabel()
 							if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
 								protected_intervals.getValue().forEach(function(tab_title) {
-									// ui.tabs.timeFactory.addInterval(tab_title)
-									console.log("---------")
-									console.log(protected_intervals.getValue())
 									ui.tabs.addTab(tab_title)
 								})
 							}
 						}), false);
 
 
+						var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправлять уведомления в следующие периоды:</h5>")
+						var intervalNotes_widget = intervalNotes.render()
+//0000//
 
 
-						var timeIntervals = [
-						 	{
-						 		id: "moy_perviy_interval",
-						 		title: "Мой первый интервал",
-						 		dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
-						 		times: [ "18:00-08:00", "12:00-13:00" ],
-						 		repeat_mode: "monthly", // yearly, weekly, daily
-						 	}
-						]
+						// global object with state of time interval controls
+						var time_interval_controls = {}
+						/*
+						 * var tab_id = moy_perviy_interval
+						 * time_interval_controls[tab_id]["monthly"] = null
+						 * time_interval_controls[tab_id]["weekly"] = null
+						 * time_interval_controls[tab_id]["yearly"] = null
+						 * time_interval_controls[tab_id]["time_ranges"][rangeSlider] = null
+						*/
 
-						
 
+
+						window.timeIntervals = {}
 						/*************************************/
 						// Save time intervals in local storage
 						/*	var timeIntervals = [
@@ -508,19 +512,52 @@ function edit_alert(btn) {
 							}
 							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
 							var rSlider_widget = rSlider.render()
+							window.EventBus.register(rSlider_widget, 'time-slider-changed', [
+									'_time-slider-created', 
+									'_time-slider-changed'
+								],
+								function(ev) {
+									// some custom staff
+									// when 'time-slider-changed' event occured
+									console.log("rSlider")
+									var t = rSlider.getValue().split(",")
+									console.log(rSlider.formatTime(t[0]) + " до " + rSlider.formatTime(t[1]))
+									// window.timeIntervals[rSlider.tab_id]["times"].push(rSlider.getValue())
+								}
+							);
 
 
 							var everyPeriod = new ui.Select("0", {
-								"every_week": "Еженедельно",
-								"every_month": "Ежемесячно",
-								"every_year": "Ежегодно"
+								"Еженедельно": "Еженедельно",
+								"Ежемесячно": "Ежемесячно",
+								"Ежегодно": "Ежегодно"
 							},
 							{
 								widget: "checkbox",
 								orientation: "horizontal",
 								multiple: true
 							})
+
+							everyPeriod.getValue = function() {
+								var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
+								var out = []
+								for (var i = 0; i < checkEls.length; i++)
+									if (checkEls[i].checked)
+										out.push(checkEls[i].value)
+
+								return out;
+							}
 							var everyPeriod_widget = everyPeriod.render()
+							window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
+									'change'
+								],
+								function(ev) {
+									// some custom staff
+									// when 'time-slider-changed' event occured
+									console.log("everyPeriod")
+									console.log(everyPeriod.getValue())
+								}
+							);
 
 
 							var pane = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
@@ -566,7 +603,7 @@ function edit_alert(btn) {
 
 							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
 							    inline: true,
-							    // ranged: true,
+							    ranged: true,
 							    multiple: true
 							});
 
@@ -590,17 +627,51 @@ function edit_alert(btn) {
 							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
 							var rSlider_widget = rSlider.render()
 
+							window.EventBus.register(rSlider_widget, 'time-slider-changed', [
+									'_time-slider-created', 
+									'_time-slider-changed'
+								],
+								function(ev) {
+									// some custom staff
+									// when 'time-slider-changed' event occured
+									console.log("rSlider")
+									var t = rSlider.getValue().split(",")
+									console.log(rSlider.formatTime(t[0]) + " до " + rSlider.formatTime(t[1]))
+									// window.timeIntervals[rSlider.tab_id]["times"].push(rSlider.getValue())
+								}
+							);
+
+
 							var everyPeriod = new ui.Select("0", {
-								"every_week": "Еженедельно",
-								"every_month": "Ежемесячно",
-								"every_year": "Ежегодно"
+								"Еженедельно": "Еженедельно",
+								"Ежемесячно": "Ежемесячно",
+								"Ежегодно": "Ежегодно"
 							},
 							{
 								widget: "checkbox",
 								orientation: "horizontal",
 								multiple: true
 							})
+							everyPeriod.getValue = function() {
+								var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
+								var out = []
+								for (var i = 0; i < checkEls.length; i++)
+									if (checkEls[i].checked)
+										out.push(checkEls[i].value)
+
+								return out;
+							}
 							var everyPeriod_widget = everyPeriod.render()
+							window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
+									'change'
+								],
+								function(ev) {
+									// some custom staff
+									// when 'time-slider-changed' event occured
+									console.log("everyPeriod")
+									console.log(everyPeriod.getValue())
+								}
+							);
 
 
 							var panes_group_location = document.querySelector(".protected-time .protected-time-panes")
@@ -639,12 +710,11 @@ function edit_alert(btn) {
 
 							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
 							    inline: true,
-							    // ranged: true,
+							    ranged: true,
 							    multiple: true
 							  });
 							  
 						}
-
 
 
 
@@ -705,6 +775,7 @@ function edit_alert(btn) {
 												tmpl_vars_widget
 											]),
 										]),
+										/*
 										E('div', { class: 'cbi-value alert-condition' }, [
 											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
 											E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
@@ -775,6 +846,7 @@ function edit_alert(btn) {
 												}, _('Добавить условие')),
 											]),
 										]),
+										*/
 										E('div', { class: 'cbi-value' }, [
 											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
 												_('Запретить отправку') + ":",
@@ -786,7 +858,8 @@ function edit_alert(btn) {
 												protected_intervals_widget,
 												E('div', { class: "protected-time-panes cbi-section-node cbi-section-node-tabbed" }, [
 													// place panes here
-												])
+												]),
+												intervalNotes_widget
 											])
 										]),
 									])

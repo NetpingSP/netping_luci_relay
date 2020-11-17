@@ -1,0 +1,56 @@
+<script type="text/javascript">
+//<![CDATA[
+L.require('ui').then(function(ui) {
+	L.require("session").then(function(session){
+		L.require('dom').then(function(dom) {
+			var UIEventBus = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
+				__init__: function() {
+				},
+
+				/** @override */
+				render: function() {
+					var divEl = E('div', {
+						class: 'event-bus',
+						style: 'display: none'
+					});
+					return this.bind(divEl);
+				},
+
+				/** @private */
+				bind: function(divEl) {
+					this.node = divEl;
+					dom.bindClassInstance(divEl, this);
+					return this.make(divEl);
+				},
+				/** @private */
+				make: function(divEl) {
+					/*
+					this.node.addEventListener('time-slider-changed', L.bind(function(ev) { 
+						var sPlace = ev.target.parentNode
+						var rs = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
+						dom.append(sPlace, rs.render())
+						var notesBanner = window.BUS["notesBanner"]
+
+						setTimeout(notesBanner.eventDispatcher, 200, '_time-slider-created', rs, notesBanner)
+					}))
+
+					this.node.addEventListener('widget-remove', L.bind(function(ev) { 
+						console.log("I'm removed " + this.idref)
+						ev.target.remove()
+					}, this))
+					*/
+					return divEl;
+				},
+				register: function(source, eventName, sourceEvents=[], callback) {
+					this.registerEvents(source, eventName, sourceEvents)
+					this.node.addEventListener(eventName, L.bind(function(ev) { 
+						return callback(ev)
+					}, this))
+				}
+			});
+			ui["EventBus"] = UIEventBus;
+		});
+	});
+});
+//]]>
+</script>
