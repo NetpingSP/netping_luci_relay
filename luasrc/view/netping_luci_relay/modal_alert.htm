@@ -172,8 +172,6 @@ function edit_alert(btn) {
 								pane.hidden_place.appendChild(pane.items[id])
 							})
 							
-
-
 							// show menu / pane set by selector
 							Object.keys(menu.items).forEach(function(id) {
 								if(tabs_list.indexOf(id) > -1) {
@@ -202,7 +200,11 @@ function edit_alert(btn) {
 								rangedDate = new Datepicker('#ranged', {
 								    inline: true,
 								    ranged: true,
-								    multiple: true
+								    multiple: true,
+								    onChange: function() {
+								    	console.log("rangedDate..")
+								    	//window.EventBus.register()
+								    }
 								  });
 							}
 						}
@@ -347,6 +349,7 @@ function edit_alert(btn) {
 							records: [
 								{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
 								{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
+								{ obj: "%_serverid_%", param: "%_error_%", operator: "=", val: 60 },
 							],
 							dropDownData: function(key) {
 								var out = {}
@@ -373,6 +376,46 @@ function edit_alert(btn) {
 						var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
 						var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
 						var cond_val3 = new ui.Textfield("15", { optional: false });
+
+						var left_parenthesis = new ui.Checkbox("1", {label: "("})
+						var left_parenthesis_disabled = new ui.Checkbox("0", {label: "(", disabled: true})
+						var right_parenthesis = new ui.Checkbox("1", {label: ")"})
+						var right_parenthesis_disabled = new ui.Checkbox("0", {label: ")", disabled: true})
+
+						left_parenthesis.render = right_parenthesis.render = right_parenthesis_disabled.render = left_parenthesis_disabled.render = function() {
+							console.log("RENDER")
+							console.log(this.options.label)
+							var id = 'cb%08x'.format(Math.random() * 0xffffffff);
+							var frameEl = E('div', {
+								'id': this.options.id,
+								'class': 'cbi-checkbox'
+							});
+
+							if (this.options.hiddenname)
+								frameEl.appendChild(E('input', {
+									'type': 'hidden',
+									'name': this.options.hiddenname,
+									'value': 1
+								}));
+
+							frameEl.appendChild(E('input', {
+								'id': id,
+								'name': this.options.name,
+								'type': 'checkbox',
+								'value': this.options.value_enabled,
+								'checked': (this.value == this.options.value_enabled) ? '' : null,
+								'disabled': this.options.disabled ? '' : null,
+								'data-widget-id': this.options.id ? 'widget.' + this.options.id : null,
+								'style': "margin-top: 5px;"
+							}));
+
+							var cssStyle = this.options.label == ")" ? "font-size: 1.5em; float: left; margin-right: 0.3em;" : "margin-left: 0em; font-size: 1.5em;"
+							if (this.options.disabled) cssStyle += " color: #cecece;"
+							frameEl.appendChild(E('label', { 'for': id, style: cssStyle }, this.options.label));
+
+							return this.bind(frameEl);
+						}
+
 
 						function updateDropdownLabel(dom_selector=".protected-time .cbi-dropdown") {
 							var ds = dom_selector + " span.more"
@@ -449,6 +492,9 @@ function edit_alert(btn) {
 
 						var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправлять уведомления в следующие периоды:</h5>")
 						var intervalNotes_widget = intervalNotes.render()
+
+						var conditionNotes = new ui.NotesBanner("<h4>Условия отправки:</h4><pre><span class='parenthesis'>(</span>%_serverid::timeout_%<span class='comparision'>></span>900<span class='logic'>OR</span>%_relayid::timeout_% <span class='comparision'>></span>600<span class='parenthesis'>)</span><br><span class='logic'>AND</span>%_serverid::error_%<span class='comparision'>=</span>1</pre>", { show: true })
+						var conditionNotes_widget = conditionNotes.render()
 //0000//
 
 
@@ -607,7 +653,11 @@ function edit_alert(btn) {
 							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
 							    inline: true,
 							    ranged: true,
-							    multiple: true
+							    multiple: true,
+							    onChange: function() {
+							    	console.log("rangedDate..")
+							    	//window.EventBus.register()
+							    }
 							});
 
 							//this.updateTabs(group);
@@ -717,11 +767,35 @@ function edit_alert(btn) {
 
 							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
 							    inline: true,
-							    ranged: true,
-							    multiple: true
-							  });
-							  
+							    ranged: false,
+							    multiple: true,
+							    onChange: function() {
+							    	// console.log(this.getValue())
+							    	var dates = this.getValue().split(",")
+							    	console.log(dates)
+							    	window.EventBus.addDates(time_interval["id"], time_interval["title"], dates)
+							    }
+							});
+
+							//window.EventBus.register(window.EventBus.node, "datepicker-changed", [])
+
+
+
+
+						// tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
+						/*
+						document.addEventListener('keydown', L.bind(function(ev) {
+							if(ev.key == "Shift") {
+								this.rangedDate._opts.ranged = true
+							}
+						}, this))
+
+						document.addEventListener('keyup', L.bind(function(ev) {
+							this.rangedDate._opts.ranged = false
+						}, this))
+*/
 						}
+						
 
 
 
@@ -782,9 +856,82 @@ function edit_alert(btn) {
 												tmpl_vars_widget
 											]),
 										]),
-										/*
+										
 										E('div', { class: 'cbi-value alert-condition' }, [
 											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Условия отправки') + ":"),
+											E('div', { class: 'cbi-value-field' }, [
+												E('table', { }, [
+													E('tr', {}, [
+														E('th', {}, _("Логика")),
+														E('th', {}, _("Скобка")),
+														E('th', {}, _("Объект")),
+														E('th', {}, _("Атрибут")),
+														E('th', {}, _("Оператор")),
+														E('th', {}, _("Значение")),
+														E('th', {}, _("Скобка")),
+														E('th', {}, _(""))
+													]),
+													E('tr', {}, [
+														E('td', {}, ""),
+														E('td', {}, left_parenthesis.render()),
+														E('td', {}, cond_object.render()),
+														E('td', {}, cond_param.render()),
+														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
+														E('td', {}, right_parenthesis_disabled.render()),
+														E('td', {}, [
+															E('a', { 
+																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																click: ui.createHandlerFn(this, function() {
+																	return allowTmplEdit();
+																})
+															}, _('Удалить')),
+														])
+													]),
+													E('tr', {}, [
+														E('td', {}, cond_logic.render()),
+														E('td', {}, left_parenthesis_disabled.render()),
+														E('td', {}, cond_object.render()),
+														E('td', {}, cond_param.render()),
+														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
+														E('td', {}, right_parenthesis.render()),
+														E('td', {}, [
+															E('a', { 
+																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																click: ui.createHandlerFn(this, function() {
+																	return allowTmplEdit();
+																})
+															}, _('Удалить')),
+														])
+													]),
+													E('tr', {}, [
+														E('td', {}, cond_logic.render()),
+														E('td', {}, left_parenthesis_disabled.render()),
+														E('td', {}, cond_object.render()),
+														E('td', {}, cond_param.render()),
+														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
+														E('td', {}, right_parenthesis_disabled.render()),
+														E('td', {}, [
+															E('a', { 
+																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																click: ui.createHandlerFn(this, function() {
+																	return allowTmplEdit();
+																})
+															}, _('Удалить')),
+														])
+													])
+												]),
+												E('a', { 
+													style: 'text-decoration: underline; cursor: pointer; display: block; padding-top: 10px;',
+													click: ui.createHandlerFn(this, function() {
+														return allowTmplEdit();
+													})
+												}, _('Добавить условие')),
+												conditionNotes_widget
+											]),
+											/*
 											E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
 												E('div', {class: 'first-condition-row'}, [
 													E('p', {class: 'small-lable'}, "Логика"),
@@ -852,8 +999,9 @@ function edit_alert(btn) {
 													})
 												}, _('Добавить условие')),
 											]),
+											*/
 										]),
-										*/
+
 										E('div', { class: 'cbi-value' }, [
 											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
 												_('Запретить отправку') + ":",

@@ -1,4 +1,9 @@
 <script type="text/javascript">
+/*
+ * ui.EventBus() is used as communicator between reactive widget on the web page
+ * If a widget wants his events to be listened by others, it has to register the events on EventBus
+ * Then if some other widgets want to react the first widget state, then they subscribe the appropriate events on EventBus
+**/
 //<![CDATA[
 L.require('ui').then(function(ui) {
 	L.require("session").then(function(session){
@@ -7,6 +12,7 @@ L.require('ui').then(function(ui) {
 				__init__: function() {
 					this.timeframe = {}
 				},
+				/*** Example of data structure
 				/*	this.timeframe: {
 				 *		"moy_perviy_interval": {
 				 *			title: "Мой первый интервал",
@@ -30,31 +36,11 @@ L.require('ui').then(function(ui) {
 				bind: function(divEl) {
 					this.node = divEl;
 					dom.bindClassInstance(divEl, this);
-					return this.make(divEl);
-				},
-				/** @private */
-				make: function(divEl) {
-					/*
-					this.node.addEventListener('time-slider-changed', L.bind(function(ev) { 
-						var sPlace = ev.target.parentNode
-						var rs = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
-						dom.append(sPlace, rs.render())
-						var notesBanner = window.BUS["notesBanner"]
-
-						setTimeout(notesBanner.eventDispatcher, 200, '_time-slider-created', rs, notesBanner)
-					}))
-
-					this.node.addEventListener('widget-remove', L.bind(function(ev) { 
-						console.log("I'm removed " + this.idref)
-						ev.target.remove()
-					}, this))
-					*/
 					return divEl;
 				},
 				addTimeRange: function(start_end="", tab_id="", tab_title="", slider_id="") {
 					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
 					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = {}
-					console.log("slider_id " + slider_id)
 					this.timeframe[tab_id]["timeranges"][slider_id] = start_end
 				},
 				removeTimeRange: function(tab_id="", slider_id="") {
@@ -68,12 +54,34 @@ L.require('ui').then(function(ui) {
 					this.timeframe[tab_id]["repeat_mode"] = repeat
 				},
 
+				addDates: function(tab_id="", tab_title="", dates=[]) {
+					var result = []
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
+					if (!("dates" in this.timeframe[tab_id])) this.timeframe[tab_id]["dates"] = []
+					console.log("dates: ")
+					console.log(dates)
+					result = this.timeframe[tab_id]["dates"].concat(dates)
+					this.timeframe[tab_id]["dates"] = result.filter((item, pos) => result.indexOf(item) === pos)
+					console.log("TF:")
+					console.log(this.timeframe[tab_id]["dates"])
+					this.node.dispatchEvent(new CustomEvent("dates-changed", {}));
+				},
+
 				register: function(source, eventName, sourceEvents=[], callback) {
 					this.registerEvents(source, eventName, sourceEvents)
 					this.node.addEventListener(eventName, L.bind(function(ev) { 
 						return callback(ev)
 					}, this))
+
+				},
+				/*
+				TODO
+				subscribe: function (target, eventName, callback) {
+					this.node.addEventListener(eventName, L.bind(function(ev) { 
+						return callback(ev)
+					}, this))
 				}
+				*/
 			});
 			ui["EventBus"] = UIEventBus;
 		});

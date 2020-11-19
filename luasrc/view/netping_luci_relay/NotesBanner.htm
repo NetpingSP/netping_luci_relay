@@ -6,6 +6,7 @@ L.require('ui').then(function(ui) {
 			var UINotesBanner = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
 				__init__: function(value, options) {
 					this.value = value;
+					this.genitive_months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"]
 					this.options = Object.assign({
 
 					}, options);
@@ -31,30 +32,46 @@ L.require('ui').then(function(ui) {
 					}
 					dom.bindClassInstance(divEl, this);
 					this.setValue(this.value)
-					this.hide()
+					if (!this.options.show)
+						this.hide()
 
 					this.registerEvents(window.EventBus.node, "times-dates-changed", [
 						'time-slider-changed',
-						'every-period-changed'
+						'every-period-changed',
+						'dates-changed'
 					])
 
 					this.node.addEventListener("times-dates-changed", L.bind(function(ev){
 						// do with delay because EventBus.addEventListener() has higher priority
+						this.show()
 						function publish(_this) {
 							var tf = window.EventBus.timeframe,
 								content = "",
 								tRanges = [],
+								dates = [],
+								formatted_dates = [],
 								repeat = [],
 								out = [];
 
 							for(tab in tf) {
+								repeat = tf[tab].repeat_mode || []
+								dates = dates.concat(tf[tab].dates)
+								if(dates[0] == "") dates.shift()
+								// dates will be "15, 16, 17-25 ноября" instead of 15.11.2020, 16.11.2020
+								if((repeat.indexOf("Ежемесячно") > -1) && dates.length > 0) {
+									dates = dates.map(function(day) {
+										return day.substr(0,2)
+									})
+
+									formatted_dates = dates.join(", ") + " числа каждого месяца"
+								}
 								tRanges = Object.values(tf[tab].timeranges).map(function(t) {
 									var s = _this.formatTime(t.split(",")[0]);
 									var e = _this.formatTime(t.split(",")[1]);
 									return "c " + s + " до " + e
 								}, _this)
-								repeat = tf[tab].repeat_mode || []
-								out = tRanges.concat(repeat)
+								
+								out = repeat.concat(formatted_dates).concat(tRanges)
 								content += "<dt>%h:".format(tf[tab].title)
 								content += "<dd>%h".format(out.join(", "))
 							}
