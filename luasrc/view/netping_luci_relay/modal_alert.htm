@@ -47,23 +47,7 @@
 	end
 	uci:foreach(config, "alert", withEveryAlert)
 
-	-- Get list of default templates
-	local tmpl_path = uci:get(config, "globals", "default_template_path")
-	local tmpls = fs.dir(tmpl_path)
-	local default_templates = {} -- all default templates will be loaded here from files
-
-	for filename in tmpls do
-		-- get event id and sendmethod id by parsing filename
-		-- e.g.: "error.sms" - event_id==error, sendmethod_id==sms
-		local s, e = filename:find("%.")
-		local event_id = filename:sub(1, s-1)
-		local sendmethod_id = filename:sub(s+1, filename:len())
-
-		if(type(default_templates[event_id]) ~= "table") then
-			default_templates[event_id] = {}
-		end
-		default_templates[event_id][sendmethod_id] = fs.readfile(tmpl_path .. "/" .. filename)
-	end
+	
 
 
 %>
@@ -104,510 +88,35 @@ function edit_alert(btn) {
 
 						var active = new ui.Checkbox(theAlert["enabled"]);
 
-						var event = new ui.Dropdown("error", possibleEvents, { optional: false });
-						var event_widget = event.render()
 
+<%+netping_luci_relay/_modal_alert_section_templete.js%>
+<%+netping_luci_relay/_modal_alert_section_condition.js%>
 
-						var alert_method = new ui.Dropdown("syslog", possibleSendmethods, { optional: false });
-						var alert_method_widget = alert_method.render();
 
+/**************** Modal section ******************/
+/* Date/Time intervals protected fom sending alers
+/*************************************************/
 
-						var tmpl_vars = new ui.Dropdown("0", theAlert["template_param"]);
-						var tmpl_vars_widget = tmpl_vars.render()
-
-
-						var menu = {
-							hidden_place: undefined,
-							live_place: undefined,
-							items: {}
-						}
-						var pane = {
-							hidden_place: undefined,
-							live_place: undefined,
-							items: {}
-						}
-						var timeSlider = undefined
-						var rangedDate = undefined
-						var init = true;
-						function makeTabs(tabs_list=[]) {
-							ui.tabs.timeFactory.addInterval("Привет мир!")
-							if (init) {
-								init = false
-								ui.tabs.initTabGroup(document.querySelector(".protected-time .protected-time-panes").childNodes)
-
-								menu.hidden_place = document.querySelector(".hidden-menu-container") || undefined
-								menu.live_place = document.querySelector(".protected-time ul.cbi-tabmenu") || undefined
-
-								pane.hidden_place = document.querySelector(".hidden-pane-container") || undefined
-								pane.live_place = document.querySelector(".protected-time .protected-time-panes") || undefined
-
-								// collect menu
-								menu.live_place.childNodes.forEach(function(node){
-									menu.items[node.getAttribute("data-tab")] = node
-								})
-
-								// collect pane
-								pane.live_place.childNodes.forEach(function(node){
-									pane.items[node.getAttribute("data-tab")] = node
-								})
-
-								// hide all menu
-								for (id in menu.items) {
-									menu.hidden_place.appendChild(menu.items[id])
-								}
-
-								// hide all pane
-								for (id in pane.items) {
-									pane.hidden_place.appendChild(pane.items[id])
-								}
-							}
-
-							// hide all menu / pane which are live in presence
-							var live_now = []
-							menu.live_place.childNodes.forEach(function(node) {
-								live_now.push(node.getAttribute("data-tab"))
-							})
-							live_now.forEach(function(id) {
-								menu.hidden_place.appendChild(menu.items[id])
-								pane.hidden_place.appendChild(pane.items[id])
-							})
-							
-							// show menu / pane set by selector
-							Object.keys(menu.items).forEach(function(id) {
-								if(tabs_list.indexOf(id) > -1) {
-									menu.live_place.appendChild(menu.items[id])
-									pane.live_place.appendChild(pane.items[id])
-								}
-							})
-
-							if(tabs_list.indexOf("daytime") > -1) {
-								if (!timeSlider) {
-									timeSlider = new rSlider({
-									    target: '#slider3',
-									    values: {min: 0, max: 24},
-									    step: 0.25,
-									    range: true,
-									    set: [8, 18],
-									    scale: true,
-									    labels: true,
-									    onChange: function (vals) {
-									        console.log(vals);
-									    }
-									});
-								}
-							}
-							if(!rangedDate) {
-								rangedDate = new Datepicker('#ranged', {
-								    inline: true,
-								    ranged: true,
-								    multiple: true,
-								    onChange: function() {
-								    	console.log("rangedDate..")
-								    	//window.EventBus.register()
-								    }
-								  });
-							}
-						}
-						// setTimeout(makeTabs, 200)
-						
-
-						// Генерируем JS_объект defaultTemplates
-						var defaultTemplates = <%=util.serialize_json(default_templates) %>
-
-						// store templates in local storage
-						session.setLocalData("default-alert-templates", defaultTemplates)
-						session.setLocalData("custom-alert-templates", defaultTemplates)
-
-						var alert_template = new ui.TextAreaHighlighted(defaultTemplates[event.getValue()][alert_method.getValue()], { 
-							optional: true,
-							datatype: "rangelength(0,256)",
-							readonly: true,
-							highlights: Object.keys(theAlert["template_param"]) });
-						var alert_template_widget = alert_template.render()
-
-						var key = ""; // catch % key pressed
-						alert_template_widget.addEventListener('keyup', (event) => {
-							key = event.key || "Escape";
-							if(key == "Escape") {
-								tmpl_vars.closeAllDropdowns()
-								tmpl_vars_widget.parentNode.style.visibility = "hidden";
-							} else {
-								// save custom template to local storage
-								saveTmplCustom(alert_template.getValue())
-							}
-						});
-
-						// enable Custom / Default switcher
-						function allowTmplEdit() {
-							document.querySelector("[name='allow-tmpl-edit']").style.display = "none"
-							document.querySelector("[name='tmpl-custom']").style.display = "block"
-							document.querySelector("[name='tmpl-default']").style.display = "block"
-							loadTmplCustom()
-						}
-						// load default templae to textarea
-						function loadTmplDefault(eventId=undefined, channelId=undefined) {
-							var tmpls = session.getLocalData("custom-alert-templates")
-							var evnt_id = eventId || event.getValue() || undefined
-							var chnl_id = channelId || alert_method.getValue() || undefined
-							alert_template.getTextArea().readOnly = true;
-
-							if(evnt_id && chnl_id) {
-								var storedTmpls = session.getLocalData("default-alert-templates")			
-								alert_template.setValue(storedTmpls[evnt_id][chnl_id])
-							} else {
-								alert_template.setValue("")
-							}
-
-							document.querySelector("[name='tmpl-custom']").style.backgroundImage = "none";
-							document.querySelector("[name='tmpl-default']").style.backgroundImage = "url(/luci-static/resources/icons/check-grey.png)";
-						}
-
-						// load custom template to textarea
-						function loadTmplCustom(eventId=undefined, channelId=undefined) {
-							var tmpls = session.getLocalData("custom-alert-templates")
-							var evnt_id = eventId || event.getValue() || undefined
-							var chnl_id = channelId || alert_method.getValue() || undefined
-							alert_template.getTextArea().readOnly = false;
-
-							if(evnt_id && chnl_id) {
-								var storedTmpls = session.getLocalData("custom-alert-templates")
-								alert_template.setValue(storedTmpls[evnt_id][chnl_id] + "\n")
-							} else {
-								alert_template.setValue("")
-							}
-							alert_template.getTextArea().focus()
-
-							document.querySelector("[name='tmpl-default']").style.backgroundImage = "none";
-							document.querySelector("[name='tmpl-custom']").style.backgroundImage = "url(/luci-static/resources/icons/check.png)";
-						}
-
-						function saveTmplCustom(tmpltext, eventId=undefined, channelId=undefined) {
-							var tmpls = session.getLocalData("custom-alert-templates")
-							var evnt_id = eventId || event.getValue() || "1"
-							var chnl_id = channelId || alert_method.getValue() || "sms"
-							tmpls[evnt_id][chnl_id] = tmpltext
-							session.setLocalData("custom-alert-templates", tmpls)
-						}
-
-
-						var already = false; // avoid fire event twice
-						function insertTmplVar() {
-							return	L.bind(function(ev) {
-								if(!already) {
-									already = true;
-									var tVar = tmpl_vars.getValue() || false
-									var pos = alert_template.getTextArea().selectionEnd;
-									if (pos >= 1 && tVar) {
-										var oldVal = alert_template.getValue();
-										var newVal = oldVal.substr(0, pos-1) + " " + tmpl_vars.getValue() + " " + oldVal.substr(pos);
-										alert_template.setValue(newVal);
-										// save custom template to local storage
-										saveTmplCustom(newVal)
-										alert_template.getTextArea().focus();
-									}
-									tmpl_vars.setValue("")
-									tmpl_vars_widget.parentNode.style.visibility = "hidden";
-								}
-							})
-						}
-						
-						alert_template.registerEvents(tmpl_vars_widget, "tmpl-var-selected", ["cbi-dropdown-change", "keyup"]);
-						alert_template_widget.addEventListener('tmpl-var-selected', insertTmplVar(), false);
-
-						alert_template.registerEvents(event_widget, "event-selected", ["cbi-dropdown-change"]);
-						alert_template_widget.addEventListener('event-selected', L.bind(function(ev) { loadTmplDefault() }), false);
-
-						alert_template.registerEvents(alert_method_widget, "alert-method-selected", ["cbi-dropdown-change"]);
-						alert_template_widget.addEventListener('alert-method-selected', L.bind(function(ev) { loadTmplDefault() }), false);
-
-						tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
-						tmpl_vars_widget.addEventListener('on-speckey-pressed', L.bind(function(ev) {
-							already = false;
-							if(key == "Escape") {
-								tmpl_vars.closeAllDropdowns()
-								ev.target.parentNode.style.visibility = "hidden";
-							} else if(key=="%") {
-								var coordinates = getCaretCoordinates(alert_template.getTextArea(), alert_template.getTextArea().selectionEnd);
-								var scrollTextArea_Y = alert_template.getTextArea().scrollTop;
-								ev.target.parentNode.style.left = - 10 + coordinates.left + "px";
-								ev.target.parentNode.style.top = 15 + coordinates.top - scrollTextArea_Y + "px";
-								ev.target.parentNode.style.visibility = "visible";
-								key = "";
-							} else if(key != "Shift") {
-								ev.target.parentNode.style.visibility = "hidden";
-							}
-						}));
-						
-
-						var conditions = {
-							defaultLogics: {
-								and: "AND",
-								or: "OR"
-							},
-
-							logics: ["or"],
-							records: [
-								{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
-								{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
-								{ obj: "%_serverid_%", param: "%_error_%", operator: "=", val: 60 },
-							],
-							dropDownData: function(key) {
-								var out = {}
-								this.records.forEach(function(item, i, arr) {
-									out[item[key]] = item[key]
-								})
-								return out;
-							}
-						}
-
-						var cond_object = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-						var cond_param = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-						var cond_operator = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-						var cond_val = new ui.Textfield("900", { optional: false });
-
-						var cond_logic = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-						var cond_object2 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-						var cond_param2 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-						var cond_operator2 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-						var cond_val2 = new ui.Textfield("60", { optional: false });
-
-						var cond_logic2 = new ui.Dropdown(0, conditions.defaultLogics, { optional: false });
-						var cond_object3 = new ui.Dropdown(0, conditions.dropDownData("obj"), { optional: false });
-						var cond_param3 = new ui.Dropdown(0, conditions.dropDownData("param"), { optional: false });
-						var cond_operator3 = new ui.Dropdown(0, conditions.dropDownData("operator"), { optional: false });
-						var cond_val3 = new ui.Textfield("15", { optional: false });
-
-						var left_parenthesis = new ui.Checkbox("1", {label: "("})
-						var left_parenthesis_disabled = new ui.Checkbox("0", {label: "(", disabled: true})
-						var right_parenthesis = new ui.Checkbox("1", {label: ")"})
-						var right_parenthesis_disabled = new ui.Checkbox("0", {label: ")", disabled: true})
-
-						left_parenthesis.render = right_parenthesis.render = right_parenthesis_disabled.render = left_parenthesis_disabled.render = function() {
-							console.log("RENDER")
-							console.log(this.options.label)
-							var id = 'cb%08x'.format(Math.random() * 0xffffffff);
-							var frameEl = E('div', {
-								'id': this.options.id,
-								'class': 'cbi-checkbox'
-							});
-
-							if (this.options.hiddenname)
-								frameEl.appendChild(E('input', {
-									'type': 'hidden',
-									'name': this.options.hiddenname,
-									'value': 1
-								}));
-
-							frameEl.appendChild(E('input', {
-								'id': id,
-								'name': this.options.name,
-								'type': 'checkbox',
-								'value': this.options.value_enabled,
-								'checked': (this.value == this.options.value_enabled) ? '' : null,
-								'disabled': this.options.disabled ? '' : null,
-								'data-widget-id': this.options.id ? 'widget.' + this.options.id : null,
-								'style': "margin-top: 5px;"
-							}));
-
-							var cssStyle = this.options.label == ")" ? "font-size: 1.5em; float: left; margin-right: 0.3em;" : "margin-left: 0em; font-size: 1.5em;"
-							if (this.options.disabled) cssStyle += " color: #cecece;"
-							frameEl.appendChild(E('label', { 'for': id, style: cssStyle }, this.options.label));
-
-							return this.bind(frameEl);
-						}
-
-
-						function updateDropdownLabel(dom_selector=".protected-time .cbi-dropdown") {
-							var ds = dom_selector + " span.more"
-							var selected_count = document.querySelectorAll(dom_selector + " input[type=hidden]").length
-							if (selected_count > 0) {
-								document.querySelector(ds).textContent = "Интервалы времени (%s)".format(selected_count)	
-							} else {
-								document.querySelector(ds).textContent = "Интервалы времени"	
-							}
-							
-						}
-
-
-
-						var protected_intervals = new ui.Dropdown("", {
-							"По ночам": "По ночам",
-							"По дням недели": "По дням недели",
-							"По дням месяца": "По дням месяца"
-						}, { 
-							multiple: true, 
-							select_placeholder: "Запретить отправку уведомлений", 
-							display_items: 0,
-							create: true
-						})
-
-
-
-						// method was overriden because of original one splits create-input string by space to several substrings
-						protected_intervals.createItems = function(sb, value) {
-							var sbox = this,
-							    val = (value || '').trim(),
-							    ul = sb.querySelector('ul');
-
-							val = val.length ? [val] : [];
-
-							val.forEach(function(item) {
-								var new_item = null;
-
-								ul.childNodes.forEach(function(li) {
-									if (li.getAttribute && li.getAttribute('data-value') === item)
-										new_item = li;
-								});
-
-								if (!new_item) {
-									new_item = sbox.createChoiceElement(sb, item);
-
-									if (!sbox.options.multiple) {
-										var old = ul.querySelector('li[created]');
-										if (old)
-											ul.removeChild(old);
-
-										new_item.setAttribute('created', '');
-									}
-
-									new_item = ul.insertBefore(new_item, ul.lastElementChild);
-								}
-
-								sbox.toggleItem(sb, new_item, true);
-								sbox.setFocus(sb, new_item, true);
-							});
-						};
-
-						var protected_intervals_widget = protected_intervals.render()
-						protected_intervals.registerEvents(protected_intervals_widget, "time-interval-selected", ["cbi-dropdown-change"]);
-						protected_intervals_widget.addEventListener('time-interval-selected', L.bind(function(ev) { 
-							updateDropdownLabel()
-							if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
-								protected_intervals.getValue().forEach(function(tab_title) {
-									ui.tabs.addTab(tab_title)
-								})
-							}
-						}), false);
-
-
-						var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправлять уведомления в следующие периоды:</h5>")
-						var intervalNotes_widget = intervalNotes.render()
-
-						var conditionNotes = new ui.NotesBanner("<h4>Условия отправки:</h4><pre><span class='parenthesis'>(</span>%_serverid::timeout_%<span class='comparision'>></span>900<span class='logic'>OR</span>%_relayid::timeout_% <span class='comparision'>></span>600<span class='parenthesis'>)</span><br><span class='logic'>AND</span>%_serverid::error_%<span class='comparision'>=</span>1</pre>", { show: true })
-						var conditionNotes_widget = conditionNotes.render()
-//0000//
-
-
-						// global object with state of time interval controls
-						var time_interval_controls = {}
-						/*
-						 * var tab_id = moy_perviy_interval
-						 * time_interval_controls[tab_id]["monthly"] = null
-						 * time_interval_controls[tab_id]["weekly"] = null
-						 * time_interval_controls[tab_id]["yearly"] = null
-						 * time_interval_controls[tab_id]["time_ranges"][rangeSlider] = null
-						*/
-
-
-
-						window.timeIntervals = {}
-						/*************************************/
-						// Save time intervals in local storage
-						/*	var timeIntervals = {
-						 *		"moy_perviy_interval": {
-						 *			title: "Мой первый интервал",
-						 *			dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
-						 *			times: [ "6.15-18", "12-13" ],
-						 *			repeat_mode: ["Ежемесячно", "Ежегодно", "Еженедельно", "Ежедневно"]
-						 *		}
-						 *	}
-						 */
-						// session.setLocalData("time-intervals", timeIntervals)
+<%+netping_luci_relay/_modal_alert_section_intervals.js%>
 
 						ui.tabs.addTab = function(interval) {
+							var rSlider_widgets = [];
+							var tf = window.EventBus.timeframe
 							var group = document.querySelector(".protected-time .protected-time-panes"),
 								menu = document.querySelector(".protected-time .cbi-tabmenu"),
 							    groupId = +group.getAttribute('data-tab-group');
+							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
+							var everyPeriod_widget = makeEveryPeriod(tf[slug(interval)].repeat_mode)
+							
 
+							time_interval["id"] = slug(time_interval["title"])
 							group.setAttribute('data-initialized', false);
 
-							if(group.childNodes.length == 0) {
-								ui.tabs.timeFactory.addInterval(interval)
-								group.setAttribute('data-initialized', true);
-								return
-							}
-
-							for(var i=0; i < group.childNodes.length; i++) {
-								if(group.childNodes[i].getAttribute("data-tab-title") == interval) {
-									return
-								}
-							}
-
-
-							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
-							time_interval["id"] = slug(time_interval["title"])
-
-							var slider_setting = {
-								values: { min: 0, max: 24 },
-								step: 0.25,
-							    range: true,
-							    set: [10, 19],
-							    scale: true,
-							    labels: true
-							}
-							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
-							var rSlider_widget = rSlider.render()
-							window.EventBus.register(rSlider_widget, 'time-slider-changed', [
-									'_time-slider-created', 
-									'_time-slider-changed'
-								],
-								function(ev) {
-									var tab = rSlider.tab_idref,
-										title = rSlider.tab_title
-									window.EventBus.addTimeRange(rSlider.getValue(), tab, title)
-								}
-							);
-
-							window.EventBus.register(rSlider_widget, 'time-slider-removed', [
-									'_time-slider-removed'
-								],
-								function(ev) {
-									console.log("REMOVED 2")
-								}
-							);
-
-
-							var everyPeriod = new ui.Select("0", {
-								"Еженедельно": "Еженедельно",
-								"Ежемесячно": "Ежемесячно",
-								"Ежегодно": "Ежегодно"
-							},
-							{
-								widget: "checkbox",
-								orientation: "horizontal",
-								multiple: true
-							})
-
-							everyPeriod.getValue = function() {
-								var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
-								var out = []
-								for (var i = 0; i < checkEls.length; i++)
-									if (checkEls[i].checked)
-										out.push(checkEls[i].value)
-
-								return out;
-							}
-							var everyPeriod_widget = everyPeriod.render()
-							window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
-									'change'
-								],
-								function(ev) {
-									var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
-									var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
-									window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
-								}
-							);
-
+							// make array of timerange widgets
+							tf[slug(interval)].timeranges.forEach(L.bind(function(t) {
+								var trange = makeSliderWidget(time_interval["id"], time_interval["title"], [parseFloat(t.split(",")[0]), parseFloat(t.split(",")[1])])
+								rSlider_widgets.push(trange)
+							}))
 
 							var pane = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
 								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
@@ -617,13 +126,28 @@ function edit_alert(btn) {
 											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
 											everyPeriod_widget
 										]),
-										E('td', {width: "55%", valign: "top"}, [
-											rSlider_widget
-										])
+										E('td', {width: "55%", valign: "top"}, rSlider_widgets)
 									])
 								])
 							])
 
+							// first tab creation
+							if(group.childNodes.length == 0) {
+								dom.append(group, pane)	
+								ui.tabs.initTabGroup(group.childNodes)
+
+								makeDatePicker(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
+
+								group.setAttribute('data-initialized', true);
+								return
+							}
+
+							// Avoid duplicates of tab
+							for(var i=0; i < group.childNodes.length; i++) {
+								if(group.childNodes[i].getAttribute("data-tab-title") == interval) {
+									return
+								}
+							}
 
 
 							var name = pane.getAttribute('data-tab'),
@@ -640,165 +164,83 @@ function edit_alert(btn) {
 								'click': this.switchTab.bind(this)
 							}, title)));
 
-							group.appendChild(pane);
 							group.setAttribute('data-initialized', true);
-							pane.setAttribute('data-tab-active', 'false');
-
-
+							group.childNodes.forEach(L.bind(function(node) {
+								node.setAttribute('data-tab-active', 'false');	
+							}))
+							group.appendChild(pane);
+							group.firstChild.setAttribute('data-tab-active', 'true');
+/*
 							pane.dispatchEvent(new CustomEvent('cbi-tab-active', {
 								detail: { tab: pane.getAttribute('data-tab') }
 							}));
+*/							
 
+							makeDatePicker(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
 
-							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
-							    inline: true,
-							    ranged: true,
-							    multiple: true,
-							    onChange: function() {
-							    	console.log("rangedDate..")
-							    	//window.EventBus.register()
-							    }
-							});
-
-							//this.updateTabs(group);
 						};
 
-						ui.tabs.timeFactory = {}
-						ui.tabs.timeFactory["time_sliders"] = []
-						ui.tabs.timeFactory["addInterval"] = function(interval={}) {
-							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
-							time_interval["id"] = slug(time_interval["title"])
 
-							var slider_setting = {
-								values: { min: 0, max: 24 },
-								step: 0.25,
-							    range: true,
-							    set: [10, 19],
-							    scale: true,
-							    labels: true
-							}
-							var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
-							var rSlider_widget = rSlider.render()
+						ui.tabs.removeTabs = function() {
+							var group = document.querySelector(".protected-time .protected-time-panes"),
+								menu = document.querySelector(".protected-time .cbi-tabmenu"),
+							    groupId = +group.getAttribute('data-tab-group');
 
-							window.EventBus.register(rSlider_widget, 'time-slider-changed', [
-									'_time-slider-created', 
-									'_time-slider-changed'
-								],
-								function(ev) {
-									var tab = rSlider.tab_idref,
-										title = rSlider.tab_title,
-										slider_id = rSlider.idref;
-									window.EventBus.addTimeRange(rSlider.getValue(), tab, title, slider_id)
+							if(group) {
+								while(group.firstChild) {
+								   	group.removeChild(group.firstChild)
 								}
-							);
-
-							window.EventBus.register(rSlider_widget, 'time-slider-removed', [
-									'_time-slider-removed'
-								],
-								function(ev) {
-									console.log("REMOVED")
-								}
-							);
-
-							var everyPeriod = new ui.Select("0", {
-								"Еженедельно": "Еженедельно",
-								"Ежемесячно": "Ежемесячно",
-								"Ежегодно": "Ежегодно"
-							},
-							{
-								widget: "checkbox",
-								orientation: "horizontal",
-								multiple: true
-							})
-							everyPeriod.getValue = function() {
-								var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
-								var out = []
-								for (var i = 0; i < checkEls.length; i++)
-									if (checkEls[i].checked)
-										out.push(checkEls[i].value)
-
-								return out;
 							}
-							var everyPeriod_widget = everyPeriod.render()
-							window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
-									'change'
-								],
-								function(ev) {
-									var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
-									var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
-									window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
+							if(menu) {
+								while(menu.firstChild) {
+								   	menu.removeChild(menu.firstChild)
 								}
-							);
-
-
-							var panes_group_location = document.querySelector(".protected-time .protected-time-panes")
-							var paneTemplate = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
-								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
-								E('table', {border: "1", style: "width: 100%"}, [
-									E('tr', {}, [
-										E('td', {width: "45%", valign: "top"}, [
-											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
-											everyPeriod_widget
-										]),
-										E('td', {width: "55%", valign: "top"}, [
-											rSlider_widget
-										])
-									])
-								])
-							])
-
-							ui.tabs.timeFactory["time_sliders"][time_interval["id"]] = paneTemplate;
-							panes_group_location.childNodes.forEach(function(node){
-								if(node.getAttribute("data-tab") in ui.tabs.timeFactory["time_sliders"]) {
-									delete ui.tabs.timeFactory["time_sliders"][node.getAttribute("data-tab")]
-								}
-							})
-							for(id in ui.tabs.timeFactory["time_sliders"]) {
-								// console.log("append ..")
-								// console.log(ui.tabs.timeFactory["time_sliders"][id])
-								dom.append(panes_group_location, ui.tabs.timeFactory["time_sliders"][id])	
+								menu.remove()
 							}
-							
-							// panes_group_location.appendChild(paneTemplate)
-							//setInterval(ui.tabs.initTabGroup, 1000, panes_group_location.childNodes)
-							// console.log(panes_group_location.childNodes)
-							ui.tabs.initTabGroup(panes_group_location.childNodes)
+						};
 
+						ui.tabs.showTab = function(tab_title) {
+							var group = document.querySelector(".protected-time .protected-time-panes"),
+								menu = document.querySelector(".protected-time .cbi-tabmenu");
+								if(!menu || !group) return;
+								var tab_to_show = group.querySelector("[data-tab='" + slug(tab_title) + "'");
+								var menu_to_show = menu.querySelector("[data-tab='" + slug(tab_title) + "'");
+							if(tab_to_show && menu_to_show) {
+								tab_to_show.style.display = "block"
+								menu_to_show.style.display = "block"
 
-							this.rangedDate = new Datepicker('#ranged_' + time_interval["id"], {
-							    inline: true,
-							    ranged: false,
-							    multiple: true,
-							    onChange: function() {
-							    	// console.log(this.getValue())
-							    	var dates = this.getValue().split(",")
-							    	console.log(dates)
-							    	window.EventBus.addDates(time_interval["id"], time_interval["title"], dates)
-							    }
-							});
+								group.childNodes.forEach(L.bind(function(node) {
+									node.setAttribute('data-tab-active', 'false');	
+								}))
+								tab_to_show.setAttribute('data-tab-active', 'true');
 
-							//window.EventBus.register(window.EventBus.node, "datepicker-changed", [])
+								menu.childNodes.forEach(L.bind(function(node) {
+									node.setAttribute('class', 'cbi-tab-disabled');	
+								}))
+								menu_to_show.setAttribute('class', 'cbi-tab');	
 
-
-
-
-						// tmpl_vars.registerEvents(alert_template_widget, "on-speckey-pressed", ["keyup"])
-						/*
-						document.addEventListener('keydown', L.bind(function(ev) {
-							if(ev.key == "Shift") {
-								this.rangedDate._opts.ranged = true
+								// window.EventBus.timeframe[slug(tab_title)]["enabled"] = true
 							}
-						}, this))
+						};
 
-						document.addEventListener('keyup', L.bind(function(ev) {
-							this.rangedDate._opts.ranged = false
-						}, this))
-*/
+						ui.tabs.hideTab = function(tab_title) {
+							var group = document.querySelector(".protected-time .protected-time-panes"),
+								menu = document.querySelector(".protected-time .cbi-tabmenu");
+								if(!menu || !group) return;
+								var tab_to_hide = group.querySelector("[data-tab='" + slug(tab_title) + "'");
+								var menu_to_hide = menu.querySelector("[data-tab='" + slug(tab_title) + "'");
+							if(tab_to_hide && menu_to_hide) {
+								tab_to_hide.style.display = "none"
+								menu_to_hide.style.display = "none"
+
+								menu_to_hide.setAttribute('class', 'cbi-tab-disabled');
+								tab_to_hide.setAttribute('data-tab-active', 'false');					
+
+								// window.EventBus.timeframe[slug(tab_title)]["enabled"] = false
+							}
 						}
-						
 
-
-
+/******************************/
 
 						// Open modal
 						L.showModal('Настройка автоматического уведомления', [
@@ -881,9 +323,10 @@ function edit_alert(btn) {
 														E('td', {}, right_parenthesis_disabled.render()),
 														E('td', {}, [
 															E('a', { 
-																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																style: 'color: grey; margin-left: 10px; text-decoration: underline; cursor: pointer;',
 																click: ui.createHandlerFn(this, function() {
-																	return allowTmplEdit();
+																	//return allowTmplEdit();
+																	return alert("Under construction..");
 																})
 															}, _('Удалить')),
 														])
@@ -898,9 +341,10 @@ function edit_alert(btn) {
 														E('td', {}, right_parenthesis.render()),
 														E('td', {}, [
 															E('a', { 
-																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																style: 'color: grey; margin-left: 10px; text-decoration: underline; cursor: pointer;',
 																click: ui.createHandlerFn(this, function() {
-																	return allowTmplEdit();
+																	//return allowTmplEdit();
+																	return alert("Under construction..");
 																})
 															}, _('Удалить')),
 														])
@@ -915,91 +359,24 @@ function edit_alert(btn) {
 														E('td', {}, right_parenthesis_disabled.render()),
 														E('td', {}, [
 															E('a', { 
-																style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
+																style: 'color: grey; margin-left: 10px; text-decoration: underline; cursor: pointer;',
 																click: ui.createHandlerFn(this, function() {
-																	return allowTmplEdit();
+																	return alert("Under construction..");
+																	// return allowTmplEdit();
 																})
 															}, _('Удалить')),
 														])
 													])
 												]),
 												E('a', { 
-													style: 'text-decoration: underline; cursor: pointer; display: block; padding-top: 10px;',
+													style: 'color: grey; text-decoration: underline; cursor: pointer; display: block; padding-top: 10px;',
 													click: ui.createHandlerFn(this, function() {
-														return allowTmplEdit();
+														return alert("Under construction..");
+														// return allowTmplEdit();
 													})
 												}, _('Добавить условие')),
 												conditionNotes_widget
 											]),
-											/*
-											E('div', { class: 'cbi-value-field', style: 'margin-top: -12px; width: auto;' }, [
-												E('div', {class: 'first-condition-row'}, [
-													E('p', {class: 'small-lable'}, "Логика"),
-													cond_logic.render(),
-												]),
-												E('div', {class: 'first-condition-row'}, [
-													E('p', {class: 'small-lable'}, "Объект"),
-													cond_object.render(),
-												]),
-												E('div', {class: 'first-condition-row'}, [
-													E('p', {class: 'small-lable'}, "Атрибут"),
-													cond_param.render(),
-												]),
-												E('div', {class: 'first-condition-row'}, [
-													E('p', {class: 'small-lable'}, "Оператор"),
-													cond_operator.render(),
-												]),
-												
-												E('div', {class: 'first-condition-row'}, [
-													E('p', {class: 'small-lable'}, "Значение"),
-													cond_val.render(),
-												]),
-												E('a', { 
-													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-													click: ui.createHandlerFn(this, function() {
-														return allowTmplEdit();
-													})
-												}, _('Удалить')),
-											]),
-											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-												cond_logic.render(),
-												cond_object2.render(),
-												cond_param2.render(),
-												cond_operator2.render(),
-												E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-													cond_val2.render(),
-												]),
-												E('a', { 
-													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-													click: ui.createHandlerFn(this, function() {
-														return allowTmplEdit();
-													})
-												}, _('Удалить')),
-											]),
-											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-												cond_logic2.render(),
-												cond_object3.render(),
-												cond_param3.render(),
-												cond_operator3.render(),
-												E('div', {style: 'display: inline-block; min-width: 50px; width: 50px;'}, [
-													cond_val3.render(),
-												]),
-												E('a', { 
-													style: 'margin-left: 10px; text-decoration: underline; cursor: pointer;',
-													click: ui.createHandlerFn(this, function() {
-														return allowTmplEdit();
-													})
-												}, _('Удалить')),
-											]),
-											E('div', { class: 'cbi-value-field', style: 'width: auto;' }, [
-												E('a', { 
-													style: 'text-decoration: underline; cursor: pointer;',
-													click: ui.createHandlerFn(this, function() {
-														return allowTmplEdit();
-													})
-												}, _('Добавить условие')),
-											]),
-											*/
 										]),
 
 										E('div', { class: 'cbi-value' }, [
@@ -1024,10 +401,11 @@ function edit_alert(btn) {
 								E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
 								' ',
 								E('div', { class: 'btn success', "name": "apply",
-									'click': ui.createHandlerFn(this, function() {
+									'click': L.hideModal 
+									/*ui.createHandlerFn(this, function() {
 											return handleSaveAlert();
 										
-									})
+									})*/
 								}, _('Сохранить'))
 							])
 						]);

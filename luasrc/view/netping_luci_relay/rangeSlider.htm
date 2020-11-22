@@ -40,6 +40,7 @@ L.require('ui').then(function(ui) {
 						tooltip:	true,
 						step: 		null,
 						disabled:	false,
+						tab_idref: 	null,
 						onChange:	null
 					}, options);
 
@@ -48,6 +49,10 @@ L.require('ui').then(function(ui) {
 							this.options[i] = this.values[i]; 
 						}
 					}
+
+					this.tab_idref = this.options.tab_idref
+					this.tab_title = this.options.tab_title
+					console.log("INIT------", this.tab_idref, this.tab_title)
 				},
 
 				/** @override */
@@ -66,8 +71,8 @@ L.require('ui').then(function(ui) {
 					])
 					this.scale = E('div', { class: 'rs-scale' })
 					this.result_message = E('div', { class: 'rs-result-message' })
-					this.addLink = E('a', { class: "rs-add-new-slider", style: "cursor: pointer;"}, _("Добавить"))
-					this.delLink = E('a', { class: "rs-remove-the-slider", style: "margin-right: 1em; cursor: pointer;" }, _("Удалить"))
+					this.addLink = E('a', { class: "rs-add-new-slider", style: "color: grey; cursor: pointer;"}, _("Добавить"))
+					this.delLink = E('a', { class: "rs-remove-the-slider", style: "color: grey; margin-right: 1em; cursor: pointer;" }, _("Удалить"))
 
 					this.slider = E('div', { class: 'rs-container' }, [
 						E('div', { class: "rs-bg" }),
@@ -101,12 +106,15 @@ L.require('ui').then(function(ui) {
 					}
 					
 
+/*
 					function showBanner(self) {
 						var notesBanner = window.BUS["notesBanner"]	
 						notesBanner.show()
 						// notesBanner.eventDispatcher('_time-slider-removed', self, notesBanner)
 					}
 					setTimeout(showBanner, 1000, this)
+
+*/
 
 
 
@@ -123,14 +131,11 @@ L.require('ui').then(function(ui) {
 //								'_time-slider-removed'
 							],
 							function(ev) {
-								console.log(ev)
-								function delayed() {
-									var tab = rs.tab_idref,
-										title = rs.tab_title,
-										slider_id = rs.idref;
-									window.EventBus.addTimeRange(rs.getValue(), tab, title, slider_id)
-								}
-								setTimeout(delayed, 200)
+								var tab = rs.tab_idref,
+									title = rs.tab_title,
+									slider_id = rs.idref;
+								// console.log("addTimeRange when " + ev)
+								// window.EventBus.addTimeRange(rs.getValue(), tab, title, slider_id)
 							}
 						);
 
@@ -138,13 +143,9 @@ L.require('ui').then(function(ui) {
 								'_time-slider-removed'
 							],
 							function(ev) {
-								console.log("DELAYED")
-								console.log(this)
-								
 								var tab = this.tab_idref,
 									slider_id = this.idref;
 								window.EventBus.removeTimeRange(tab, slider_id)
-								
 							}
 						);
 
@@ -158,10 +159,11 @@ L.require('ui').then(function(ui) {
 					}, this))
 
 
+					// this.rendered_widget = frameEl
+					this.idref = this.node.getAttribute("data-idref")
 
-
-					this.rendered_widget = frameEl
 					setTimeout(this.setInitialValues, 200, this)
+
 					return frameEl;
 				},
 
@@ -216,9 +218,13 @@ L.require('ui').then(function(ui) {
 
 					// keep idref of slider
 					// and data-tab as data_id
-					self.idref = self.node.getAttribute("data-idref")
-					self.tab_idref = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
-					self.tab_title = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+					// self.idref = self.node.getAttribute("data-idref")
+					
+					// TODO
+					// do this with document.querySelector()
+					// self.tab_idref = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+					// self.tab_title = self.node.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+
 
 					return self.createScale();
 				},
@@ -280,8 +286,10 @@ L.require('ui').then(function(ui) {
 					window.addEventListener('resize', this.onResize.bind(this));
 
 					// add event for "add new slider" and "delete this slider"
+					/*
 					this.registerEvents(this.addLink, '_time-slider-created', ["click"]);
 					this.registerEvents(this.delLink, '_time-slider-removed', ["click"]);
+					*/
 					this.registerEvents(this.input, '_time-slider-changed', ["input"]);
 
 					return this.setValues();

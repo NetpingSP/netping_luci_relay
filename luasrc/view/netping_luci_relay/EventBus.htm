@@ -10,11 +10,27 @@ L.require('ui').then(function(ui) {
 		L.require('dom').then(function(dom) {
 			var UIEventBus = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
 				__init__: function() {
-					this.timeframe = {}
+					this.timeframe = {
+						"po_nocham": {
+							enabled: true,
+							title: "По ночам",
+							dates: ["2020-12-10", "2020-12-12"],
+							timeranges: ["8.5,16"],
+							repeat_mode: ["Ежегодно"]
+						},
+						"po_dnyam_mesyaca": {
+							enabled: true,
+							title: "По дням месяца",
+							dates: ["2020-12-15", "2020-12-16", "2020-12-17", "2020-12-18"],
+							timeranges: ["21,6.75"],
+							repeat_mode: ["Ежемесячно"]
+						}
+					}
 				},
 				/*** Example of data structure
 				/*	this.timeframe: {
 				 *		"moy_perviy_interval": {
+				 *			enabled: true,
 				 *			title: "Мой первый интервал",
 				 *			dates: [ "YYYY-MM-DD", "YYYY-MM-DD:YYYY-MM-DD" ],
 				 *			timeranges: {"<slider_idref_1>": "6.15-18", "<slider_idref_2>": "8-18"},
@@ -39,32 +55,53 @@ L.require('ui').then(function(ui) {
 					return divEl;
 				},
 				addTimeRange: function(start_end="", tab_id="", tab_title="", slider_id="") {
-					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
-					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = {}
-					this.timeframe[tab_id]["timeranges"][slider_id] = start_end
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title, enabled: true }
+					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = []
+					//this.timeframe[tab_id]["timeranges"][slider_id] = start_end
+				this.timeframe[tab_id]["timeranges"][0] = start_end
+					this.node.dispatchEvent(new CustomEvent("bus-time-slider-changed", {}));
 				},
 				removeTimeRange: function(tab_id="", slider_id="") {
 					if ((tab_id in this.timeframe) && (slider_id in this.timeframe[tab_id]["timeranges"])) {
 						delete this.timeframe[tab_id]["timeranges"][slider_id]
+						this.node.dispatchEvent(new CustomEvent("bus-time-slider-changed", {}));
 					}
 				},
 				addRepeatMode: function(repeat=[], tab_id="", tab_title="") {
-					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title, enabled: true }
+					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = {}
 					if (!("repeat_mode" in this.timeframe[tab_id])) this.timeframe[tab_id]["repeat_mode"] = []
 					this.timeframe[tab_id]["repeat_mode"] = repeat
+					this.node.dispatchEvent(new CustomEvent("bus-every-period-changed", {}));
 				},
 
 				addDates: function(tab_id="", tab_title="", dates=[]) {
 					var result = []
-					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title }
+					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title, enabled: true }
+					if (!("timeranges" in this.timeframe[tab_id])) this.timeframe[tab_id]["timeranges"] = {}
 					if (!("dates" in this.timeframe[tab_id])) this.timeframe[tab_id]["dates"] = []
-					console.log("dates: ")
-					console.log(dates)
-					result = this.timeframe[tab_id]["dates"].concat(dates)
-					this.timeframe[tab_id]["dates"] = result.filter((item, pos) => result.indexOf(item) === pos)
-					console.log("TF:")
-					console.log(this.timeframe[tab_id]["dates"])
-					this.node.dispatchEvent(new CustomEvent("dates-changed", {}));
+
+					// remove dublicates from array
+					this.timeframe[tab_id]["dates"] = dates.filter((item, pos) => dates.indexOf(item) === pos)
+					this.node.dispatchEvent(new CustomEvent("bus-dates-changed", {}));
+				},
+
+				disableTab: function(tab_title) {
+					//ui.tabs.removeTabs()
+					ui.tabs.hideTab(tab_title)
+					this.timeframe[slug(tab_title)]["enabled"] = false
+					this.node.dispatchEvent(new CustomEvent("bus-disable-all-tabs", {}));
+				},
+
+				enableTab: function(tab_title) {
+					ui.tabs.showTab(tab_title)
+					this.timeframe[slug(tab_title)]["enabled"] = true
+					this.node.dispatchEvent(new CustomEvent("bus-disable-all-tabs", {}));
+				},
+
+				addTab: function(tab_title) {
+					ui.tabs.addTab(tab_title)
+					this.node.dispatchEvent(new CustomEvent("bus-add-tab", {}));
 				},
 
 				register: function(source, eventName, sourceEvents=[], callback) {
@@ -72,16 +109,7 @@ L.require('ui').then(function(ui) {
 					this.node.addEventListener(eventName, L.bind(function(ev) { 
 						return callback(ev)
 					}, this))
-
-				},
-				/*
-				TODO
-				subscribe: function (target, eventName, callback) {
-					this.node.addEventListener(eventName, L.bind(function(ev) { 
-						return callback(ev)
-					}, this))
 				}
-				*/
 			});
 			ui["EventBus"] = UIEventBus;
 		});

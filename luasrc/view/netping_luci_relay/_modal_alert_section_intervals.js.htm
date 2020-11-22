@@ -1,0 +1,202 @@
+
+// dropdown title becomes "Интервалы времени (3)"
+function updateDropdownLabel(dom_selector=".protected-time .cbi-dropdown") {
+	var ds = dom_selector + " span.more"
+	var selected_count = document.querySelectorAll(dom_selector + " input[type=hidden]").length
+	if (selected_count > 0) {
+		document.querySelector(ds).textContent = "Интервалы времени (%s)".format(selected_count)	
+	} else {
+		document.querySelector(ds).textContent = "Интервалы времени"	
+	}
+	
+}
+
+var interval_loader = {}
+var tf = window.EventBus.timeframe
+for(tab in tf) {
+	interval_loader[tf[tab].title] = tf[tab].title
+}
+
+var protected_intervals = new ui.Dropdown(Object.values(interval_loader), interval_loader, { 
+	multiple: true, 
+	select_placeholder: "Запретить отправку уведомлений", 
+	display_items: 0,
+	create: false
+})
+
+
+
+// method was overriden because of original one splits create-input string by space to several substrings
+protected_intervals.createItems = function(sb, value) {
+	var sbox = this,
+	    val = (value || '').trim(),
+	    ul = sb.querySelector('ul');
+
+	val = val.length ? [val] : [];
+
+	val.forEach(function(item) {
+		var new_item = null;
+
+		ul.childNodes.forEach(function(li) {
+			if (li.getAttribute && li.getAttribute('data-value') === item)
+				new_item = li;
+		});
+
+		if (!new_item) {
+			new_item = sbox.createChoiceElement(sb, item);
+
+			if (!sbox.options.multiple) {
+				var old = ul.querySelector('li[created]');
+				if (old)
+					ul.removeChild(old);
+
+				new_item.setAttribute('created', '');
+			}
+
+			new_item = ul.insertBefore(new_item, ul.lastElementChild);
+		}
+
+		sbox.toggleItem(sb, new_item, true);
+		sbox.setFocus(sb, new_item, true);
+	});
+};
+
+var protected_intervals_widget = protected_intervals.render()
+
+// add tab first time when page loaded
+function delay_add_tab(protected_intervals) {
+	for (tabid in protected_intervals.choices) {
+		window.EventBus.addTab(protected_intervals.choices[tabid])
+	}	
+	updateDropdownLabel()
+}
+setTimeout(delay_add_tab, 200, protected_intervals)
+
+// show / hide tab by handling dropdown selector
+protected_intervals.registerEvents(protected_intervals_widget, "time-interval-selected", ["cbi-dropdown-change"]);
+protected_intervals_widget.addEventListener('time-interval-selected', L.bind(function(ev) {
+	updateDropdownLabel()
+	if(protected_intervals_widget.hasAttribute("open") == true) { // avoid twice effect
+		var opened_tabs = window.EventBus.timeframe
+		// hide tabs that are not selected in dropdown selector
+		for(tabid in opened_tabs) {
+			var tab_title = opened_tabs[tabid]["title"]
+			if(protected_intervals.getValue().indexOf(tab_title) == -1) {
+				window.EventBus.disableTab(tab_title)
+			}
+		}
+		// show tabs selected in dropdown selector
+		protected_intervals.getValue().forEach(function(tab_title) {
+			window.EventBus.enableTab(tab_title)
+		})
+	protected_intervals.closeAllDropdowns()
+	}
+}), false);
+
+
+var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправлять уведомления в следующие периоды:</h5>")
+var intervalNotes_widget = intervalNotes.render()
+
+
+// Weekly, Yearly, Monthly
+function makeEveryPeriod(initVal=[]) {
+	var everyPeriod = new ui.Select(initVal, {
+		"Еженедельно": "Еженедельно",
+		"Ежемесячно": "Ежемесячно",
+		"Ежегодно": "Ежегодно"
+	},
+	{
+		widget: "checkbox",
+		orientation: "horizontal",
+		multiple: true
+	})
+	var everyPeriod_widget = null
+
+	everyPeriod.getValue = function() {
+		var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
+		var out = []
+		for (var i = 0; i < checkEls.length; i++)
+			if (checkEls[i].checked)
+				out.push(checkEls[i].value)
+
+		return out;
+	}
+
+	everyPeriod_widget = everyPeriod.render()
+
+	everyPeriod_widget.querySelector(".cbi-checkbox").firstChild.setAttribute("disabled", "true");
+
+	window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
+			'change'
+		],
+		function(ev) {
+			var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+			var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+			window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
+		}
+	);
+	return everyPeriod_widget
+}
+
+
+function makeSliderWidget(tab_idref, tab_title, initVal=[]) {
+	var slider_setting = {
+		values: { min: 0, max: 24 },
+		step: 0.25,
+	    range: true,
+	    set: initVal || [10,17],
+	    scale: true,
+	    labels: true,
+	    tab_idref: tab_idref,
+	    tab_title: tab_title
+	}
+	var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
+	var rSlider_widget = rSlider.render()
+	window.EventBus.register(rSlider_widget, 'time-slider-changed', [
+			'_time-slider-created', 
+			'_time-slider-changed'
+		],
+		function(ev) {
+			var tab = rSlider.tab_idref,
+				title = rSlider.tab_title,
+				slider_id = rSlider.idref;
+			window.EventBus.addTimeRange(rSlider.getValue(), tab, title, slider_id)
+		}
+	);
+	window.EventBus.register(rSlider_widget, 'time-slider-removed', [
+			'_time-slider-removed'
+		],
+		function(ev) {
+			console.log("REMOVED 2")
+		}
+	);	
+	return rSlider_widget
+}
+
+function makeDatePicker(tab_idref, tab_title, datesInit=[]) {
+		var datepicker = new Datepicker('#ranged_' + tab_idref, {
+		    inline: true,
+		    ranged: false,
+		    multiple: true,
+		    onChange: function() {
+		    	var dates = this.getValue().split(",")
+		    	window.EventBus.addDates(tab_idref, tab_title, dates)
+		    }
+		});
+
+		var dates = [];
+
+	    for (var i = 0; i < datesInit.length; i++) {
+	    	var date = new Date(Date.parse(datesInit[i]));
+	    	date.setHours(0,0,0,0);
+	    	date.setDate(date.getDate());
+	    	dates.push(new Date(date));
+	    }
+
+		datepicker.set('multiple', true);
+		datepicker.addDate(dates);
+		datepicker.open('first');
+
+
+	    return datepicker;
+}

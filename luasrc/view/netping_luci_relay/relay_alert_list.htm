@@ -8,6 +8,7 @@
 <%+netping_luci_relay/textAreaHighlighted%>
 <%+netping_luci_relay/rangeSlider%>
 <%+netping_luci_relay/NotesBanner%>
+<%+netping_luci_relay/NotesBannerConditions%>
 
 
 <%
@@ -37,6 +38,7 @@
 	<input type="button" class="cbi-button cbi-button-apply" style="margin-bottom: 1em;"
 		onclick="add_alert(this)"
 		data-relayid=""
+		disabled="disabled"
 		value="Добавить автоматическое уведомление"/>
 
 	<div class="table">
@@ -78,6 +80,7 @@
 					<input type="button" class="cbi-button cbi-button-reset"
 						onclick="delete_alert(this)"
 						value="Удалить"
+						disabled="disabled"
 						style="display: initial;" />
 				</div>
 			</div>
