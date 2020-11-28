@@ -33,5 +33,11 @@ function uuid() {
   });
 }
 
+
+// make "2020-11-30" from "30.11.2020
+function normDateString(s) {
+	return s.split(".").reverse().join("-");
+}
+
 //]]>
 </script>

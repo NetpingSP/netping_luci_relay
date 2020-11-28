@@ -21,7 +21,7 @@ var protected_intervals = new ui.Dropdown(Object.values(interval_loader), interv
 	multiple: true, 
 	select_placeholder: "Запретить отправку уведомлений", 
 	display_items: 0,
-	create: false
+	create: true
 })
 
 
@@ -66,7 +66,12 @@ var protected_intervals_widget = protected_intervals.render()
 // add tab first time when page loaded
 function delay_add_tab(protected_intervals) {
 	for (tabid in protected_intervals.choices) {
-		window.EventBus.addTab(protected_intervals.choices[tabid])
+		window.EventBus.renderTab(protected_intervals.choices[tabid])	
+		/*if(slug(tabid) in window.EventBus.timeframe) {
+			window.EventBus.renderTab(protected_intervals.choices[tabid])	
+		} else {
+			ui.tabs.createTab(tabid)	
+		}*/
 	}	
 	updateDropdownLabel()
 }
@@ -98,9 +103,15 @@ var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправля�
 var intervalNotes_widget = intervalNotes.render()
 
 
+var EveryPeriod = {
+	make: null, // function
+	/* here we keep link to EveryPeriod object of each tab */
+	/* tabid: EveryPeriod object */
+}
+
 // Weekly, Yearly, Monthly
-function makeEveryPeriod(initVal=[]) {
-	var everyPeriod = new ui.Select(initVal, {
+EveryPeriod["make"] = function(initVal=[], tabid="") {
+	var _everyPeriod = new ui.Select(initVal, {
 		"Еженедельно": "Еженедельно",
 		"Ежемесячно": "Ежемесячно",
 		"Ежегодно": "Ежегодно"
@@ -108,12 +119,16 @@ function makeEveryPeriod(initVal=[]) {
 	{
 		widget: "checkbox",
 		orientation: "horizontal",
-		multiple: true
+		multiple: false,
+		name: "repeat_mode_" + tabid
 	})
-	var everyPeriod_widget = null
 
-	everyPeriod.getValue = function() {
-		var checkEls = this.node.querySelectorAll('input[type="checkbox"]');
+	_everyPeriod.oldState = initVal[0] || ""; // keep previous state in order to make "toggle" the same options on/off
+	var _everyPeriod_widget = null
+
+
+	_everyPeriod.getValue = function() {
+		var checkEls = this.node.querySelectorAll('input[type="radio"]');
 		var out = []
 		for (var i = 0; i < checkEls.length; i++)
 			if (checkEls[i].checked)
@@ -122,20 +137,73 @@ function makeEveryPeriod(initVal=[]) {
 		return out;
 	}
 
-	everyPeriod_widget = everyPeriod.render()
 
-	everyPeriod_widget.querySelector(".cbi-checkbox").firstChild.setAttribute("disabled", "true");
+	_everyPeriod.clearAll = function(value) {
+		var radioEls = _everyPeriod.node.querySelectorAll('input[type="radio"]');
+		for (var i = 0; i < radioEls.length; i++)
+			radioEls[i].checked = false;
+	}
 
-	window.EventBus.register(everyPeriod_widget, 'every-period-changed', [
+	/** @override */
+	_everyPeriod.setValue = function(value) {
+		if (this.options.widget != 'radio' && this.options.widget != 'checkbox') {
+			if (value == null)
+				value = '';
+
+			for (var i = 0; i < this.node.firstChild.options.length; i++)
+				this.node.firstChild.options[i].selected = (this.node.firstChild.options[i].value == value);
+
+			return;
+		}
+
+		var radioEls = this.node.querySelectorAll('input[type="radio"]');
+		for (var i = 0; i < radioEls.length; i++)
+			radioEls[i].checked = (radioEls[i].value == value);
+	}
+
+
+	_everyPeriod_widget = _everyPeriod.render()
+
+
+
+	
+	// Make reset input radio by clicking to the option twice
+	_everyPeriod_widget.addEventListener("mouseup", function(ev) {
+		var inp = ev.path[0].hasAttribute("value") ? ev.path[0] : ev.path[1].firstChild || undefined
+		if(!inp) {
+			console.log("Input Radio is not found in 'EveryPeriod' widget!")
+			return;
+		}
+		var current = (inp) ? inp.value : undefined
+		var tab = _everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+		var title = _everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+		var eb = window.EventBus
+		
+		if (current == _everyPeriod.oldState) {
+			setTimeout(function(inp) {
+				inp.checked = false 
+			}, 200, inp)
+			_everyPeriod.oldState = ""
+			//eb.addRepeatMode([], tab, title)
+			eb.clearRepeatMode(tab)
+		}
+	})
+
+	window.EventBus.register(_everyPeriod_widget, '_every-period-changed_' + tabid, [
 			'change'
 		],
 		function(ev) {
-			var tab = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
-			var title = everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
-			window.EventBus.addRepeatMode(everyPeriod.getValue(), tab, title)
+			var rMode = []
+			var tab = _everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab")
+			var title = _everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
+			_everyPeriod.oldState = _everyPeriod.getValue()[0]
+			window.EventBus.addRepeatMode(_everyPeriod.getValue(), tab, title)
 		}
 	);
-	return everyPeriod_widget
+
+
+	this[tabid] = _everyPeriod
+	return _everyPeriod_widget
 }
 
 
@@ -173,7 +241,13 @@ function makeSliderWidget(tab_idref, tab_title, initVal=[]) {
 	return rSlider_widget
 }
 
-function makeDatePicker(tab_idref, tab_title, datesInit=[]) {
+var DatePicker = {
+	make: null, // function
+	reset: null, // function
+	/* here we keep link to datepicker object of each tab */
+	/* tabid: datepickerObject */
+}
+DatePicker["make"] = function(tab_idref, tab_title, datesInit=[]) {
 		var datepicker = new Datepicker('#ranged_' + tab_idref, {
 		    inline: true,
 		    ranged: false,
@@ -197,6 +271,21 @@ function makeDatePicker(tab_idref, tab_title, datesInit=[]) {
 		datepicker.addDate(dates);
 		datepicker.open('first');
 
+		document.getElementById('ranged_' + tab_idref).nextSibling.style.zIndex = 0;
 
+		// keeps link to datepicker object
+		// it allows to access the datepicker methods from outside
+		this["tab_idref"] = datepicker
 	    return datepicker;
+};
+
+DatePicker["reset"] = function(tabid) {
+	var date = new Date();
+	this["tab_idref"].setDate(date)
+	this["tab_idref"].toggleDate(date)
+	this["tab_idref"].open()
+
+	window.EventBus.clearDates(tabid)
+	EveryPeriod[tabid].clearAll()
+	window.EventBus.clearRepeatMode(tabid)
 }

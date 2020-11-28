@@ -1,1 +1,1 @@
-Здравствуйте, %_user::firstname_% %_user::lastname_%! \nРеле %_relayid_% не отвечает на запросы. \n\nСистема автоматических уведомлений\nNetPing
+Здравствуйте, %_user::firstname_% %_user::lastname_%! \nРеле %_relayid_% не отвечает на запросы. \n\nСистема автоматических уведомлений\nNetPing.

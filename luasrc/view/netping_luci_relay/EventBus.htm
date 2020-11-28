@@ -75,6 +75,15 @@ L.require('ui').then(function(ui) {
 					this.node.dispatchEvent(new CustomEvent("bus-every-period-changed", {}));
 				},
 
+				clearRepeatMode: function(tab_id) {
+					if(!tab_id) { 
+						console.log("tab_id is not defined");
+						return;
+					}
+					this.timeframe[tab_id]["repeat_mode"] = []
+					this.node.dispatchEvent(new CustomEvent("bus-every-period-changed", {}));	
+				},
+
 				addDates: function(tab_id="", tab_title="", dates=[]) {
 					var result = []
 					if (!(tab_id in this.timeframe)) this.timeframe[tab_id] = { title: tab_title, enabled: true }
@@ -86,21 +95,30 @@ L.require('ui').then(function(ui) {
 					this.node.dispatchEvent(new CustomEvent("bus-dates-changed", {}));
 				},
 
+				clearDates: function(tab_id) {
+					if(!tab_id) { 
+						console.log("tab_id is not defined");
+						return;
+					}
+					this.timeframe[tab_id]["dates"] = []
+					this.node.dispatchEvent(new CustomEvent("bus-dates-changed", {}));	
+				},
+
 				disableTab: function(tab_title) {
 					//ui.tabs.removeTabs()
 					ui.tabs.hideTab(tab_title)
 					this.timeframe[slug(tab_title)]["enabled"] = false
-					this.node.dispatchEvent(new CustomEvent("bus-disable-all-tabs", {}));
+					this.node.dispatchEvent(new CustomEvent("bus-disable-tab", {}));
 				},
 
 				enableTab: function(tab_title) {
 					ui.tabs.showTab(tab_title)
 					this.timeframe[slug(tab_title)]["enabled"] = true
-					this.node.dispatchEvent(new CustomEvent("bus-disable-all-tabs", {}));
+					this.node.dispatchEvent(new CustomEvent("bus-enable-tab", {}));
 				},
 
-				addTab: function(tab_title) {
-					ui.tabs.addTab(tab_title)
+				renderTab: function(tab_title) {
+					ui.tabs.renderTab(tab_title)
 					this.node.dispatchEvent(new CustomEvent("bus-add-tab", {}));
 				},
 

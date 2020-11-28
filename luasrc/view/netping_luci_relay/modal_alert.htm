@@ -99,17 +99,34 @@ function edit_alert(btn) {
 
 <%+netping_luci_relay/_modal_alert_section_intervals.js%>
 
-						ui.tabs.addTab = function(interval) {
-							var rSlider_widgets = [];
+						// cerate new time interval tab
+						ui.tabs.createTab = function(interval="") {
 							var tf = window.EventBus.timeframe
+							var time_interval = { 
+								"title": interval ,
+								"enabled": true,
+								"dates": [],
+								"timeranges": ["8,16"],
+								"repeat_mode": []
+							}
+							tf[slug(interval)] = time_interval
+							window.EventBus.renderTab(interval)
+						};
+
+						// add time interval from "window.EventBus.timeframe" object to 
+						ui.tabs.renderTab = function(interval="") {
+							var tf = window.EventBus.timeframe
+							var rSlider_widgets = [];
 							var group = document.querySelector(".protected-time .protected-time-panes"),
 								menu = document.querySelector(".protected-time .cbi-tabmenu"),
 							    groupId = +group.getAttribute('data-tab-group');
-							var time_interval = typeof(interval) == "string" ? { "title": interval } : interval
-							var everyPeriod_widget = makeEveryPeriod(tf[slug(interval)].repeat_mode)
+							var time_interval = { 
+								"title": interval,
+								"id": slug(interval)
+							}
 							
-
-							time_interval["id"] = slug(time_interval["title"])
+							var everyPeriod_widget = EveryPeriod.make(tf[slug(interval)].repeat_mode, slug(interval))
+							
 							group.setAttribute('data-initialized', false);
 
 							// make array of timerange widgets
@@ -118,13 +135,21 @@ function edit_alert(btn) {
 								rSlider_widgets.push(trange)
 							}))
 
+							var dp = DatePicker
 							var pane = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
 								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
 								E('table', {border: "1", style: "width: 100%"}, [
 									E('tr', {}, [
 										E('td', {width: "45%", valign: "top"}, [
 											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
-											everyPeriod_widget
+											everyPeriod_widget,
+											E('a', { 
+												click: ui.createHandlerFn(this, function() {
+													DatePicker.reset(time_interval["id"])
+													return;
+												}),
+												style: "cursor: pointer; display: block; margin-top: 0.5em; margin-bottom:1em; text-decoration: underline;",
+											}, _("Очистить настройки дат"))
 										]),
 										E('td', {width: "55%", valign: "top"}, rSlider_widgets)
 									])
@@ -136,7 +161,7 @@ function edit_alert(btn) {
 								dom.append(group, pane)	
 								ui.tabs.initTabGroup(group.childNodes)
 
-								makeDatePicker(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
+								DatePicker.make(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
 
 								group.setAttribute('data-initialized', true);
 								return
@@ -152,8 +177,12 @@ function edit_alert(btn) {
 
 							var name = pane.getAttribute('data-tab'),
 							    title = pane.getAttribute('data-tab-title'),
-							    active = false;
+							    active = true;
 
+
+							menu.childNodes.forEach(L.bind(function(node) {
+								node.setAttribute('class', 'cbi-tab-disabled');	
+							}))
 
 							menu.appendChild(E('li', {
 								'style': this.isEmptyPane(pane) ? 'display:none' : null,
@@ -168,15 +197,17 @@ function edit_alert(btn) {
 							group.childNodes.forEach(L.bind(function(node) {
 								node.setAttribute('data-tab-active', 'false');	
 							}))
-							group.appendChild(pane);
-							group.firstChild.setAttribute('data-tab-active', 'true');
+							var appended_node = group.appendChild(pane);
+
+							appended_node.setAttribute('data-tab-active', 'true');
+
 /*
 							pane.dispatchEvent(new CustomEvent('cbi-tab-active', {
 								detail: { tab: pane.getAttribute('data-tab') }
 							}));
 */							
 
-							makeDatePicker(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
+							DatePicker.make(time_interval["id"], time_interval["title"], tf[slug(interval)].dates)
 
 						};
 
@@ -202,9 +233,17 @@ function edit_alert(btn) {
 						ui.tabs.showTab = function(tab_title) {
 							var group = document.querySelector(".protected-time .protected-time-panes"),
 								menu = document.querySelector(".protected-time .cbi-tabmenu");
-								if(!menu || !group) return;
+								if(!menu || !group) {
+									console.log("ADD 1")
+									// ui.tabs.renderTab(tab_title);
+									ui.tabs.createTab(tab_title)
+									// window.EventBus.renderTab(interval)
+									return;
+								}
 								var tab_to_show = group.querySelector("[data-tab='" + slug(tab_title) + "'");
 								var menu_to_show = menu.querySelector("[data-tab='" + slug(tab_title) + "'");
+								// var everyPeriod_to_show = tab_to_show.querySelector("[name='repeat_mode_" + slug(tab_title) + "']")
+								// console.log("everyPeriod_to_show ", everyPeriod_to_show)
 							if(tab_to_show && menu_to_show) {
 								tab_to_show.style.display = "block"
 								menu_to_show.style.display = "block"
@@ -212,14 +251,19 @@ function edit_alert(btn) {
 								group.childNodes.forEach(L.bind(function(node) {
 									node.setAttribute('data-tab-active', 'false');	
 								}))
-								tab_to_show.setAttribute('data-tab-active', 'true');
-
 								menu.childNodes.forEach(L.bind(function(node) {
 									node.setAttribute('class', 'cbi-tab-disabled');	
 								}))
+								tab_to_show.setAttribute('data-tab-active', 'true');
 								menu_to_show.setAttribute('class', 'cbi-tab');	
 
+
 								// window.EventBus.timeframe[slug(tab_title)]["enabled"] = true
+							} else {
+								console.log("ADD 2")
+								ui.tabs.createTab(tab_title)
+								// ui.tabs.renderTab(tab_title);
+								return;
 							}
 						};
 
@@ -238,7 +282,7 @@ function edit_alert(btn) {
 
 								// window.EventBus.timeframe[slug(tab_title)]["enabled"] = false
 							}
-						}
+						};
 
 /******************************/
 

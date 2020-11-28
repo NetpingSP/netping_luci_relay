@@ -7,7 +7,9 @@ L.require('ui').then(function(ui) {
 				__init__: function(value, options) {
 					this.value = value;
 					this.options = Object.assign({
-						"genitive_months": [" ", "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+						"genitive_months": [" ", "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
+						"genitive_days": ["понедельникам", "вторникам", "средам", "четвергам", "пятницам", "субботам", "воскресеньям"],
+						"accusative_day": ["понедельник", "вторник", "среду", "четверг", "пятницу", "субботу", "воскресенье"]
 					}, options);
 				},
 
@@ -42,7 +44,10 @@ L.require('ui').then(function(ui) {
 					this.registerEvents(window.EventBus.node, "times-dates-changed", [
 						'bus-time-slider-changed',
 						'bus-every-period-changed',
-						'bus-dates-changed'
+						'bus-dates-changed',
+						'bus-enable-tab',
+						'bus-disable-tab',
+						'bus-add-tab'
 					])
 					this.node.addEventListener("times-dates-changed", L.bind(function(ev){
 						// do with delay because EventBus.addEventListener() has higher priority
@@ -52,6 +57,7 @@ L.require('ui').then(function(ui) {
 							content = "",
 							out = [];
 						for(tab in tf) {
+							if (!tf[tab]["enabled"]) continue;
 							var dates = [],
 								days_months = []
 								formatted_dates = [],
@@ -61,8 +67,6 @@ L.require('ui').then(function(ui) {
 
 							repeat = tf[tab].repeat_mode || []
 							dates = tf[tab].dates || []
-
-							if (!enabled) break;
 
 							if(dates[0] == "") dates.shift()
 							// dates will be "15, 16, 17-25 ноября" instead of 15.11.2020, 16.11.2020
@@ -87,35 +91,63 @@ L.require('ui').then(function(ui) {
 								}
 								formatted_dates = formatted_dates.join(", ")
 							} else if((repeat.indexOf("Еженедельно") > -1) && dates.length > 0) {
-
-							} else if((repeat.length == 0) && dates.length > 0) {
-								days_months = dates.map(function(date) {
-									return date.substr(0,5)
-								})
-								// make string "10, 11, 12 ноября", instead of "10.11, 11.11, 12.11"
-								var res = {}
-								days_months.forEach(function(item) {
-									var m = item.substr(3,2)
-									if (!(m in res)) res[m] = []
-									res[m].push(item.substr(0,2))
-								})
-								for (m in res) {
-									formatted_dates.push(res[m].join(", ") + " " + this.options.genitive_months[parseInt(m, 10)])
+								// get days of week from Datepicker
+								var weekdays = [],
+									adverb = ["каждый", "каждый", "каждую", "каждый", "каждую", "каждую", "каждое"] // каждое воскресенье
+									preposition = "по", // по пятницам
+									day_n = 0;
+								for(d of dates) {
+									day_n = new Date(Date.parse(normDateString(d))).getDay()
+									if(weekdays.indexOf(day_n) == -1) {
+										weekdays.push(day_n)
+									}
 								}
-								formatted_dates = formatted_dates.join(", ")
+								if(weekdays.length == 1){
+									// например: каждую среду
+									formatted_dates.push(adverb[day_n] + " " + this.options.accusative_day[weekdays[0]])
+								} else if (weekdays.length > 1) {
+									// например: по средам, четвергам и воскресеньям
+									weekdays = weekdays.map(function(d) { 
+										return this.options.genitive_days[d] 
+									}, this)
+									weekdays[0] = preposition + " " + weekdays[0]
+									formatted_dates.push(weekdays.join(", "))
+								}
+							} else if(repeat.length == 0) {
+								if(dates.length > 0) {
+									// make string "10, 11, 12 ноября", instead of "10.11, 11.11, 12.11"
+									var res = {};
+									dates.forEach(function(item) {
+										var m_y = item.substr(3,7)
+										if (!(m_y in res)) res[m_y] = []
+										res[m_y].push(item.substr(0,2))
+									})
+									for (m_y in res) {
+										formatted_dates.push(res[m_y].join(", ") + " " + this.options.genitive_months[parseInt(m_y, 10)] + " " + m_y.substr(3,4) + " года")
+									}
+									formatted_dates = formatted_dates.join(", ")
+								} else {
+									formatted_dates.push("Ежедневно")
+								}
 							}
 							tRanges = Object.values(tf[tab].timeranges).map(function(t) {
 								var s = this.formatTime(t.split(",")[0]);
 								var e = this.formatTime(t.split(",")[1]);
 								return "c " + s + " до " + e
 							}, this)
-							
+
 							out = repeat.concat(formatted_dates).concat(tRanges)
 							content += "<dt>%h:".format(tf[tab].title)
 							content += "<dd>%h".format(out.join(", "))
 						}
-						content = "<h4>Запретить отправку уведомлений</h4><dl>%s</dl>".format(content)
-						this.setValue(content)	
+						if(content.length > 0) {
+							content = "<h4>Запретить отправку уведомлений</h4><dl>%s</dl>".format(content)
+							this.setValue(content)			
+						} else {
+							this.hide()
+						}
+						
+						
 						// }
 						//setTimeout(publish, 200, this)
 						// publish(this)
