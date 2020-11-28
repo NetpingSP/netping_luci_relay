@@ -140,8 +140,10 @@ EveryPeriod["make"] = function(initVal=[], tabid="") {
 
 	_everyPeriod.clearAll = function(value) {
 		var radioEls = _everyPeriod.node.querySelectorAll('input[type="radio"]');
-		for (var i = 0; i < radioEls.length; i++)
+		for (var i = 0; i < radioEls.length; i++) {
 			radioEls[i].checked = false;
+		}
+		this.oldState = ""
 	}
 
 	/** @override */
@@ -179,10 +181,10 @@ EveryPeriod["make"] = function(initVal=[], tabid="") {
 		var title = _everyPeriod_widget.parentNode.parentNode.parentNode.parentNode.getAttribute("data-tab-title")
 		var eb = window.EventBus
 		
-		if (current == _everyPeriod.oldState) {
+		if ((current == _everyPeriod.oldState) && _everyPeriod.oldState != "") {
 			setTimeout(function(inp) {
 				inp.checked = false 
-			}, 200, inp)
+			}, 100, inp)
 			_everyPeriod.oldState = ""
 			//eb.addRepeatMode([], tab, title)
 			eb.clearRepeatMode(tab)
@@ -275,15 +277,15 @@ DatePicker["make"] = function(tab_idref, tab_title, datesInit=[]) {
 
 		// keeps link to datepicker object
 		// it allows to access the datepicker methods from outside
-		this["tab_idref"] = datepicker
+		this[tab_idref] = datepicker
 	    return datepicker;
 };
 
 DatePicker["reset"] = function(tabid) {
 	var date = new Date();
-	this["tab_idref"].setDate(date)
-	this["tab_idref"].toggleDate(date)
-	this["tab_idref"].open()
+	this[tabid].setDate(date)
+	this[tabid].toggleDate(date)
+	this[tabid].open()
 
 	window.EventBus.clearDates(tabid)
 	EveryPeriod[tabid].clearAll()
