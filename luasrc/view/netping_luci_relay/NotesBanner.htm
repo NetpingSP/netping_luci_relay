@@ -141,7 +141,7 @@ L.require('ui').then(function(ui) {
 							content += "<dd>%h".format(out.join(", "))
 						}
 						if(content.length > 0) {
-							content = "<h4>Запретить отправку уведомлений</h4><dl>%s</dl>".format(content)
+							content = this.value + "<dl>%s</dl>".format(content)
 							this.setValue(content)			
 						} else {
 							this.hide()

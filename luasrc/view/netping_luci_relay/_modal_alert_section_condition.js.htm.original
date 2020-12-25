@@ -10,8 +10,9 @@ var conditions = {
 
 	logics: ["or"],
 	records: [
-		{ obj: "Цель#1", param: "AND", operator: "Цель#2", val: 900 },
-		{ obj: "Цель#3", param: "OR", operator: "Цель#4", val: 60 },
+		{ obj: "%_relayid_%", param: "%_timeout_%", operator: ">", val: 900 },
+		{ obj: "%_serverid_%", param: "%_timeout_%", operator: ">", val: 60 },
+		{ obj: "%_serverid_%", param: "%_error_%", operator: "=", val: 60 },
 	],
 	dropDownData: function(key) {
 		var out = {}

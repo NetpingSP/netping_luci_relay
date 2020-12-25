@@ -67,11 +67,6 @@ var protected_intervals_widget = protected_intervals.render()
 function delay_add_tab(protected_intervals) {
 	for (tabid in protected_intervals.choices) {
 		window.EventBus.renderTab(protected_intervals.choices[tabid])	
-		/*if(slug(tabid) in window.EventBus.timeframe) {
-			window.EventBus.renderTab(protected_intervals.choices[tabid])	
-		} else {
-			ui.tabs.createTab(tabid)	
-		}*/
 	}	
 	updateDropdownLabel()
 }
@@ -99,7 +94,7 @@ protected_intervals_widget.addEventListener('time-interval-selected', L.bind(fun
 }), false);
 
 
-var intervalNotes = new ui.NotesBanner("<h5>Запрещено отправлять уведомления в следующие периоды:</h5>")
+var intervalNotes = new ui.NotesBanner("<h4>Запрещено отправлять уведомления в следующие периоды:</h4>")
 var intervalNotes_widget = intervalNotes.render()
 
 
@@ -209,40 +204,7 @@ EveryPeriod["make"] = function(initVal=[], tabid="") {
 }
 
 
-function makeSliderWidget(tab_idref, tab_title, initVal=[]) {
-	var slider_setting = {
-		values: { min: 0, max: 24 },
-		step: 0.25,
-	    range: true,
-	    set: initVal || [10,17],
-	    scale: true,
-	    labels: true,
-	    tab_idref: tab_idref,
-	    tab_title: tab_title
-	}
-	var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
-	var rSlider_widget = rSlider.render()
-	window.EventBus.register(rSlider_widget, 'time-slider-changed', [
-			'_time-slider-created', 
-			'_time-slider-changed'
-		],
-		function(ev) {
-			var tab = rSlider.tab_idref,
-				title = rSlider.tab_title,
-				slider_id = rSlider.idref;
-			window.EventBus.addTimeRange(rSlider.getValue(), tab, title, slider_id)
-		}
-	);
-	window.EventBus.register(rSlider_widget, 'time-slider-removed', [
-			'_time-slider-removed'
-		],
-		function(ev) {
-			console.log("REMOVED 2")
-		}
-	);	
-	return rSlider_widget
-}
-
+/********* Date Picker object for every tab ************/
 var DatePicker = {
 	make: null, // function
 	reset: null, // function
@@ -290,4 +252,50 @@ DatePicker["reset"] = function(tabid) {
 	window.EventBus.clearDates(tabid)
 	EveryPeriod[tabid].clearAll()
 	window.EventBus.clearRepeatMode(tabid)
+}
+
+window.EventBus.node.addEventListener('time-slider-changed', function(ev) { 
+		console.log("::::::::: time-slider-changed")
+		window.EventBus.node.dispatchEvent(new CustomEvent("bus-time-slider-changed", {}));
+	})
+
+/******** Time Sliders for every tab *************/
+var TimeSliderWidgets = []
+
+function makeSliderWidget(tab_idref, tab_title, initVal=[]) {
+	var slider_setting = {
+		values: { min: 0, max: 24 },
+		step: 0.25,
+	    range: true,
+	    set: initVal || [10,17],
+	    scale: true,
+	    labels: true,
+	    tab_idref: tab_idref,
+	    tab_title: tab_title
+	}
+	var rSlider = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
+	var rSlider_widget = rSlider.render()
+	
+	
+	window.EventBus.register3(rSlider_widget, 'time-slider-changed', [
+			'_time-slider-created', 
+			'_time-slider-changed'
+		],
+		function(source) {
+			var tab = rSlider.tab_idref,
+				title = rSlider.tab_title;
+			window.EventBus.addTimeRange(rSlider.getValue(), tab, title, source)
+		}
+	);
+
+	window.EventBus.register3(rSlider_widget, 'time-slider-removed', [
+			'_time-slider-removed'
+		],
+		function(source) {
+			var tab = rSlider.tab_idref;
+			window.EventBus.removeTimeRange(tab, source)
+		}
+	);	
+	
+	return rSlider_widget
 }

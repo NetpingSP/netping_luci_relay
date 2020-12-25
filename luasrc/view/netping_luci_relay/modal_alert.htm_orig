@@ -134,24 +134,13 @@ function edit_alert(btn) {
 								var trange = makeSliderWidget(time_interval["id"], time_interval["title"], [parseFloat(t.split(",")[0]), parseFloat(t.split(",")[1])])
 								rSlider_widgets.push(trange)
 							}))
-							var addSlider = E('a', { 
-								click: ui.createHandlerFn(this, function(e) {
-									var theLinkNode = e.target
-									var newSlider = makeSliderWidget(time_interval["id"], time_interval["title"], [6, 18])
-									theLinkNode.parentNode.insertBefore(newSlider, theLinkNode);
-									tf[slug(interval)].timeranges.push("6,18")
-									return;
-								}),
-								style: "cursor: pointer; display: block; margin-top: 0.5em; margin-bottom:1em; text-decoration: underline; float: right;"
-							}, _("Добавить суточный интервал"))
-							rSlider_widgets.push(addSlider)
 
 							var dp = DatePicker
 							var pane = E('div', { "data-tab": time_interval["id"], "data-tab-title": time_interval["title"], "data-tab-active": "false"}, [
 								E('p', { style: "padding: 0.4em 0 3em 0"}, "Укажите в какой промежуток времени запретить отправку уведомлений:"),
 								E('table', {border: "1", style: "width: 100%"}, [
 									E('tr', {}, [
-										E('td', {width: "40%", valign: "top"}, [
+										E('td', {width: "45%", valign: "top"}, [
 											E('input', {type: "hidden", id: "ranged_" + time_interval["id"]}),
 											everyPeriod_widget,
 											E('a', { 
@@ -162,7 +151,7 @@ function edit_alert(btn) {
 												style: "cursor: pointer; display: block; margin-top: 0.5em; margin-bottom:1em; text-decoration: underline;",
 											}, _("Очистить настройки дат"))
 										]),
-										E('td', {width: "60%", valign: "top"}, rSlider_widgets)
+										E('td', {width: "55%", valign: "top"}, rSlider_widgets)
 									])
 								])
 							])
@@ -361,9 +350,10 @@ function edit_alert(btn) {
 													E('tr', {}, [
 														E('th', {}, _("Логика")),
 														E('th', {}, _("Скобка")),
-														E('th', {}, _("Цель")),
-														E('th', {}, _("Логика")),
-														E('th', {}, _("Цель")),
+														E('th', {}, _("Объект")),
+														E('th', {}, _("Атрибут")),
+														E('th', {}, _("Оператор")),
+														E('th', {}, _("Значение")),
 														E('th', {}, _("Скобка")),
 														E('th', {}, _(""))
 													]),
@@ -373,6 +363,7 @@ function edit_alert(btn) {
 														E('td', {}, cond_object.render()),
 														E('td', {}, cond_param.render()),
 														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
 														E('td', {}, right_parenthesis_disabled.render()),
 														E('td', {}, [
 															E('a', { 
@@ -390,6 +381,7 @@ function edit_alert(btn) {
 														E('td', {}, cond_object.render()),
 														E('td', {}, cond_param.render()),
 														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
 														E('td', {}, right_parenthesis.render()),
 														E('td', {}, [
 															E('a', { 
@@ -407,6 +399,7 @@ function edit_alert(btn) {
 														E('td', {}, cond_object.render()),
 														E('td', {}, cond_param.render()),
 														E('td', {}, cond_operator.render()),
+														E('td', {}, cond_val.render()),
 														E('td', {}, right_parenthesis_disabled.render()),
 														E('td', {}, [
 															E('a', { 
@@ -432,7 +425,7 @@ function edit_alert(btn) {
 
 										E('div', { class: 'cbi-value' }, [
 											E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, [
-												_('Режим молчания') + ":",
+												_('Запретить отправку') + ":",
 												E('br'),
 												E('p', {style: 'font-style: italic; font-size: 0.8em; line-height: 120%; margin-top:0.5em;'}, _('Укажите интервалы времени когда запрещено отправлять данное уведомление.')
 												)

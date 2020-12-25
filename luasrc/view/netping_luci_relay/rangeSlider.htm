@@ -34,7 +34,7 @@ L.require('ui').then(function(ui) {
 						values: 	null,
 						set: 		null,
 						range: 		false,
-						width: 		null,
+						width: 		"350px",
 						scale:		true,
 						labels:		true,
 						tooltip:	true,
@@ -52,7 +52,6 @@ L.require('ui').then(function(ui) {
 
 					this.tab_idref = this.options.tab_idref
 					this.tab_title = this.options.tab_title
-					console.log("INIT------", this.tab_idref, this.tab_title)
 				},
 
 				/** @override */
@@ -71,8 +70,8 @@ L.require('ui').then(function(ui) {
 					])
 					this.scale = E('div', { class: 'rs-scale' })
 					this.result_message = E('div', { class: 'rs-result-message' })
-					this.addLink = E('a', { class: "rs-add-new-slider", style: "color: grey; cursor: pointer;"}, _("Добавить"))
-					this.delLink = E('a', { class: "rs-remove-the-slider", style: "color: grey; margin-right: 1em; cursor: pointer;" }, _("Удалить"))
+					// this.addLink = E('a', { class: "rs-add-new-slider", style: "color: grey; cursor: pointer;"}, _("Добавить"))
+					this.delLink = E('a', { class: "rs-remove-the-slider", style: "float: right; cursor: pointer;" }, _("Удалить"))
 
 					this.slider = E('div', { class: 'rs-container' }, [
 						E('div', { class: "rs-bg" }),
@@ -87,8 +86,8 @@ L.require('ui').then(function(ui) {
 					var frameEl = E('div', { 'id': this.options.id, class: "slider-container" }, [
 						this.input,
 						this.slider,
-						this.delLink,
-						this.addLink,
+						this.delLink
+						// this.addLink,
 						// this.result_message
 					]);
 
@@ -119,13 +118,14 @@ L.require('ui').then(function(ui) {
 
 
 
+
 					this.node.addEventListener('_time-slider-created', L.bind(function(ev) {
 						var sPlace = ev.target.parentNode
 						var rs = new ui.RangeSlider({ start: 0, end: 24 }, slider_setting)
 						var rs_widget = rs.render()
 						dom.append(sPlace, rs_widget)
 						
-						window.EventBus.register(rs_widget, 'time-slider-changed', [
+						window.EventBus.register3(rs_widget, 'time-slider-changed', [
 								'_time-slider-created', 
 								'_time-slider-changed',
 //								'_time-slider-removed'
@@ -134,11 +134,11 @@ L.require('ui').then(function(ui) {
 								var tab = rs.tab_idref,
 									title = rs.tab_title,
 									slider_id = rs.idref;
-								// console.log("addTimeRange when " + ev)
 								// window.EventBus.addTimeRange(rs.getValue(), tab, title, slider_id)
 							}
 						);
 
+/*
 						window.EventBus.register(this.node, 'time-slider-removed', [
 								'_time-slider-removed'
 							],
@@ -148,16 +148,18 @@ L.require('ui').then(function(ui) {
 								window.EventBus.removeTimeRange(tab, slider_id)
 							}
 						);
+*/
 
 					}, this))
 
+/*
 
 					this.node.addEventListener('_time-slider-removed', L.bind(function(ev) { 
 						
 						window.EventBus.removeTimeRange(this.tab_idref, this.idref)
 						// ev.target.remove()
 					}, this))
-
+*/
 
 					// this.rendered_widget = frameEl
 					this.idref = this.node.getAttribute("data-idref")
@@ -286,10 +288,10 @@ L.require('ui').then(function(ui) {
 					window.addEventListener('resize', this.onResize.bind(this));
 
 					// add event for "add new slider" and "delete this slider"
-					/*
-					this.registerEvents(this.addLink, '_time-slider-created', ["click"]);
+					
+					// this.registerEvents(this.addLink, '_time-slider-created', ["click"]);
 					this.registerEvents(this.delLink, '_time-slider-removed', ["click"]);
-					*/
+					
 					this.registerEvents(this.input, '_time-slider-changed', ["input"]);
 
 					return this.setValues();
