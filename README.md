@@ -2,7 +2,7 @@
 
 OpenWrt LuCI page for relay management.
 
-![me](https://github.com/Netping/netping_luci_relay/blob/v3/control/screenshot_animated.gif)
+![me](https://github.com/Netping/netping_luci_relay/blob/v4/control/screenshot_animated.gif)
 
 ## Структура файлов
 
