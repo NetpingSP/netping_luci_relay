@@ -1,4 +1,7 @@
 <style type="text/css">
+	@import url('/luci-static/resources/netping/fonts/fonts.css');
+
+
 	.btn_spinner {
 		display: inline-block;
 		width: 0px;
@@ -224,6 +227,118 @@ a[name='tmpl-default'], a[name='tmpl-custom'] {
 	text-decoration: underline;
 	vertical-align: text-bottom;
 	cursor: pointer;
+}
+
+.cbi-value {
+	margin-bottom: 3em;
+}
+
+.cbi-value-title {
+	max-width: 200px;
+	width: auto;
+	font-weight: bold;
+}
+
+.cbi-value-title.memo-edit {
+	margin-top: 10px;
+}
+
+.cbi-value-field {
+	max-width: 800px;
+	width: auto;
+}
+
+.cbi-value-field.memo-edit div input {
+	border: 1px solid #333;
+	height: 45px;
+	background-color: #4C4C4C;
+	border-radius: 4px;
+	width: 100%;
+	font-family: 'Cuprum-VariableFont',Sans-Serif;
+	font-weight: 600;
+	font-size: 24px;
+	color: #FFFFFF;
+	padding-left: 20px;
+}
+
+.cbi-value-field table.cbi-2cols tr td {
+	padding-right: 15px;
+	padding-bottom: 10px;
+}
+
+.cbi-value-field table.cbi-2cols tr td input {
+	width: 300px;
+}
+
+.modal, 
+#modal_overlay > .modal {
+	padding: 2em 2em 4em;
+}
+
+.modal .cbi-map {
+	margin-top: 2.5em;
+}
+
+input, textarea, select, .cbi-dropdown ul {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+div.table.modal-section-param {
+	width: 100%;
+}
+
+div.table.modal-section-param .tr .td {
+	padding: 6px 0px 6px 10px;
+}
+
+div.table.modal-section-param input {
+	height: 20px;
+	font-family:'Courier-Prime',Sans-Serif;
+	color: #333;
+	text-align: right;
+	font-weight: normal;
+}
+
+div.cbi-value-field-flex {
+	display: flex;
+	flex-flow: row wrap;
+}
+
+@media (max-width: 600px) {  
+	div.cbi-value-field-flex {
+		flex-flow: column wrap;
+		border: 5px solid blue;
+	}
+}
+
+div.cbi-value-field-1col {
+	padding-right: 20px;
+	width: 30%;
+}
+
+div.cbi-value-field-2col {
+	flex-grow: 1;
+	width: 70%;
+}
+
+.table.modal-section-param input[type="text"] + .cbi-button, 
+.table.modal-section-param input[type="password"] + .cbi-button, 
+.table.modal-section-param select + .cbi-button {
+	height: 20px;
+	line-height: 19px;
+}
+
+.table.modal-section-param .cbi-dropdown {
+	height: 20px;
+}
+
+.table.modal-section-param .cbi-dropdown ul {
+	overflow: unset;
+}
+
+div.cbi-value-field-1col .cbi-dropdown:not(.btn):not(.cbi-button), .cbi-dynlist {
+    width: 100%;
 }
 
 </style>
