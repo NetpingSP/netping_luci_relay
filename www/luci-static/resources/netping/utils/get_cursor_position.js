@@ -1,5 +1,3 @@
-<script type="text/javascript">
-//<![CDATA[
 // We'll copy the properties below into the mirror div.
 // Note that some browsers, such as Firefox, do not concatenate properties
 // into their shorthand (e.g. padding-top, padding-bottom etc. -> padding),
@@ -152,7 +150,3 @@ if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
 } else if(isBrowser) {
   window.getCaretCoordinates = getCaretCoordinates;
 }
-
-
-//]]>
-</script>

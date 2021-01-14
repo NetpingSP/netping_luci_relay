@@ -8,47 +8,38 @@ OpenWrt LuCI page for relay management.
 
 ```bash
 ├── control
-│   ├── conffiles
-│   ├── control
-│   └── screenshot_animated.gif
 ├── dev
-│   ├── commits_comments
-│   │   └── 202010280237.txt
-│   ├── openwrt-19.07.4-x86-generic-combined-ext4.img.vdi
-│   └── readme.txt
+│   └── commits_comments
 ├── etc
-│   └── config
-│       ├── settings
-│       └── settings_v1
+│   ├── config
+│   └── netping_relay
+│       └── template
+│           ├── custom
+│           └── default
 ├── luasrc
 │   ├── controller
 │   │   └── netping_luci_relay
-│   │       └── index.lua
 │   ├── model
 │   │   └── cbi
 │   │       └── netping_luci_relay
-│   │           ├── alert.lua
-│   │           └── relay.lua
 │   └── view
 │       └── netping_luci_relay
-│           ├── css.htm
-│           ├── get_cursor_position.htm
-│           ├── jquery.highlight-within-textarea.css.htm
-│           ├── js.htm
-│           ├── modal_alert.htm
-│           ├── modal.htm
-│           ├── relay_alert_list.htm
-│           ├── table.htm
-│           └── textAreaHighlighted.htm
-├── README.md
+│           ├── ui_overrides
+│           ├── ui_utils
+│           └── ui_widgets
 └── www
     └── luci-static
         └── resources
-            ├── icons
-            │   ├── check-grey.png
-            │   └── check.png
-            ├── jquery-3.5.1.min.js
-            └── jquery.highlight-within-textarea.js
+            └── netping
+                ├── datepicker
+                │   └── css
+                ├── fonts
+                │   └── variable_fonts
+                ├── icons
+                ├── jquery
+                ├── rslider
+                └── utils
+
 ```
 
 ## Инструкция по установке
@@ -58,5 +49,5 @@ OpenWrt LuCI page for relay management.
 
 ## ToDo
 
-1. Если пользователь переключает Weekly, Monthly, Yearly не выбрав предварительно ни одной даты, то установить сегодняшнюю дату
+1. DONE: Если пользователь переключает Weekly, Monthly, Yearly не выбрав предварительно ни одной даты, то установить сегодняшнюю дату
 2. Сделать "плавающую" ширину виджета Slider, т.к. при уменьшении экрана (уже при 1000 px) элементы наехжают друг на друга.

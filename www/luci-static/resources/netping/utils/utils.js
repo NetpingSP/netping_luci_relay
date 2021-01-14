@@ -1,5 +1,3 @@
-<script type="text/javascript">
-//<![CDATA[
 function slug(str) {
 	var result = ''
 	const ru = new Map([
@@ -38,6 +36,3 @@ function uuid() {
 function normDateString(s) {
 	return s.split(".").reverse().join("-");
 }
-
-//]]>
-</script>

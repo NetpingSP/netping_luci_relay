@@ -1,15 +1,21 @@
-<%+netping_luci_relay/EventBus%>
+<% 	--[[=========== STYLES ==========]] %>
 <%+netping_luci_relay/css%>
-<%+netping_luci_relay/rSlider.css%>
-<%+netping_luci_relay/alert.js%>
-<%+netping_luci_relay/modal_alert%>
-<%+netping_luci_relay/get_cursor_position%>
-<%+netping_luci_relay/jquery.highlight-within-textarea.css%>
-<%+netping_luci_relay/textAreaHighlighted%>
-<%+netping_luci_relay/rangeSlider%>
-<%+netping_luci_relay/NotesBanner%>
-<%+netping_luci_relay/NotesBannerConditions%>
 
+<% --[[=========== JS ==========]] %>
+<%+netping_luci_relay/modal_alert%>
+<%+netping_luci_relay/ui_utils/utils.js%>
+<%+netping_luci_relay/ui_utils/external.js%>
+<%+netping_luci_relay/ui_overrides/TextFieldStyled.js%>
+<%+netping_luci_relay/alert.js%>
+
+<% --[[=========== UI WIDGETS ==========]] %>
+<%+netping_luci_relay/ui_widgets/UIRangeSlider%>
+<%+netping_luci_relay/ui_widgets/UIEventBus%>
+<%+netping_luci_relay/ui_widgets/UITextareaHighlighted%>
+<%+netping_luci_relay/ui_widgets/UINotesBanner%>
+<%+netping_luci_relay/ui_widgets/UINotesBannerCond%>
+
+<% --[[=========== LUA BACKEND ==========]] %>
 
 <%
 	local config = "settings"
@@ -32,6 +38,8 @@
 	uci:foreach(config, "alert", withEveryAlert)
 	local i = 1
 %> 
+
+<% --[[=========== HTML ==========]] %>
 <div id="view">
 	<h2 name="content">Список автоматических уведомлений реле "Серверный шкаф основной"</h2>
 	<div class="cbi-map-descr">В данной таблице - список настроенных уведомлений о событиях реле "Серверный шкаф основной".</div>
