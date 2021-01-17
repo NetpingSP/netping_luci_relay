@@ -9,13 +9,6 @@ OpenWrt LuCI page for relay management.
 ```bash
 ├── control
 ├── dev
-│   └── commits_comments
-├── etc
-│   ├── config
-│   └── netping_relay
-│       └── template
-│           ├── custom
-│           └── default
 ├── luasrc
 │   ├── controller
 │   │   └── netping_luci_relay
@@ -27,6 +20,13 @@ OpenWrt LuCI page for relay management.
 │           ├── ui_overrides
 │           ├── ui_utils
 │           └── ui_widgets
+├── root
+│   └── etc
+│       ├── config
+│       └── netping_luci_relay
+│           └── template
+│               ├── custom
+│               └── default
 └── www
     └── luci-static
         └── resources
@@ -34,12 +34,10 @@ OpenWrt LuCI page for relay management.
                 ├── datepicker
                 │   └── css
                 ├── fonts
-                │   └── variable_fonts
                 ├── icons
                 ├── jquery
                 ├── rslider
                 └── utils
-
 ```
 
 ## Инструкция по установке
