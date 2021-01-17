@@ -1,0 +1,1199 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>OpenWrt - Relays - LuCI</title>
+		<meta name="viewport" content="initial-scale=1.0">
+		<link rel="stylesheet" href="/luci-static/bootstrap/cascade.css?v=git-20.247.75781-0d0ab01">
+		<link rel="stylesheet" media="only screen and (max-device-width: 854px)" href="/luci-static/bootstrap/mobile.css?v=git-20.247.75781-0d0ab01" type="text/css" />
+		<link rel="shortcut icon" href="/luci-static/bootstrap/favicon.png">
+		<script src="/cgi-bin/luci/admin/translations/en?v=git-20.247.75781-0d0ab01"></script>
+		<script src="/luci-static/resources/cbi.js?v=git-20.247.75781-0d0ab01"></script>
+	</head>
+
+	<body class="lang_en Relays" data-page="admin-system-relay">
+		<header>
+			<div class="fill">
+				<div class="container">
+					<a class="brand" href="#">OpenWrt</a>
+					<ul class="nav" id="topmenu" style="display:none"></ul>
+					<div id="indicators" class="pull-right"></div>
+				</div>
+			</div>
+		</header>
+
+		<div id="maincontent" class="container"><noscript>
+				<div class="alert-message warning">
+					<h4>JavaScript required!</h4>
+					<p>You must enable JavaScript in your browser or LuCI will not work properly.</p>
+				</div>
+			</noscript>
+
+			<div id="tabmenu" style="display:none"></div>
+
+
+<script type="text/javascript" src="/luci-static/resources/promis.min.js?v=git-20.247.75781-0d0ab01"></script>
+<script type="text/javascript" src="/luci-static/resources/luci.js?v=git-20.247.75781-0d0ab01"></script>
+<script type="text/javascript">
+	L = new LuCI({"apply_rollback":90,"resource":"\/luci-static\/resources","media":"\/luci-static\/bootstrap","documentroot":"\/www","pathinfo":"\/admin\/system\/relay","apply_display":1.5,"requestpath":["admin","system","relay"],"ubuspath":"\/ubus\/","scriptname":"\/cgi-bin\/luci","dispatchpath":["admin","system","relay"],"sessionid":"e0ee50d0a09efc1e5820eaa139b7eb06","token":"44ad4fc695d8f467c28817b452341a8e","apply_timeout":5,"apply_holdoff":4,"nodespec":{"satisfied":true,"action":{"post":{"cbi.submit":true},"type":"cbi","path":"netping_luci_relay\/relay"},"order":30,"children":{"action":{"wildcard":true,"satisfied":true,"action":{"module":"luci.controller.netping_luci_relay.index","type":"call","function":"do_relay_action","parameters":[]}}},"title":"Relays"},"pollinterval":5});
+
+</script>
+
+<form method="post" name="cbi" action="/cgi-bin/luci/admin/system/relay" enctype="multipart/form-data" onreset="return cbi_validate_reset(this)" onsubmit="return cbi_validate_form(this, 'Some fields are invalid, cannot save values!')" data-strings="{&#34;path&#34;:{&#34;resource&#34;:&#34;\/luci-static\/resources&#34;,&#34;browser&#34;:&#34;\/cgi-bin\/luci\/admin\/filebrowser&#34;},&#34;label&#34;:{&#34;choose&#34;:&#34;-- Please choose --&#34;,&#34;custom&#34;:&#34;-- custom --&#34;}}">
+	<div>
+		<input type="hidden" name="token" value="44ad4fc695d8f467c28817b452341a8e" />
+		<input type="hidden" name="cbi.submit" value="1" />
+		<input type="submit" value="Save" class="hidden" />
+	</div>
+<script type="text/javascript" src="/luci-static/resources/netping/utils/utils.js"></script>
+<script type="text/javascript" src="/luci-static/resources/netping/utils/get_cursor_position.js"></script>
+<script src="/luci-static/resources/netping/jquery/jquery-3.5.1.min.js" 
+		type="text/javascript" 
+		charset="utf-8"></script>
+
+<script src="/luci-static/resources/netping/jquery/jquery.highlight-within-textarea.js" 
+		type="text/javascript" 
+		charset="utf-8"></script>
+
+<script src="/luci-static/resources/netping/datepicker/datepicker.min.js"
+		type="text/javascript" 
+		charset="utf-8"></script>
+
+<script type="text/javascript">
+//<![CDATA[
+L.require("dom").then(function(dom)	{
+	L.require("ui").then(function(ui)	{
+		var TextFieldStyled = ui.Textfield.extend({
+			render: function() {
+				var frameEl = E('div', { 'id': this.options.id });
+				var inputEl = E('input', {
+					'id': this.options.id ? 'widget.' + this.options.id : null,
+					'name': this.options.name,
+					'type': 'text',
+					'class': this.options.password ? 'cbi-input-password' : 'cbi-input-text',
+					'readonly': this.options.readonly ? '' : null,
+					'disabled': this.options.disabled ? '' : null,
+					'maxlength': this.options.maxlength,
+					'placeholder': this.options.placeholder,
+					'value': this.value,
+					'style': this.options.htmlStyle
+				});
+
+				if (this.options.password) {
+					
+					frameEl.appendChild(E('div', { 'class': 'control-group' }, [
+						inputEl,
+
+						E('button', {
+							'class': 'cbi-button cbi-button-neutral',
+							'title': _('Reveal/hide password'),
+							'aria-label': _('Reveal/hide password'),
+							'click': function(ev) {
+								console.log("MMM")
+								var e = this.previousElementSibling;
+								e.type = (e.type === 'password') ? 'text' : 'password';
+								ev.preventDefault();
+							}
+						}, '∗')
+					
+					]));
+
+					window.requestAnimationFrame(function() { inputEl.type = 'password' });
+
+
+				}
+				else {
+					frameEl.appendChild(inputEl);
+				}
+
+				return this.bind(frameEl);
+			},
+			bind: function(frameEl) {
+				var inputEl = frameEl.querySelector('input');
+
+				this.node = frameEl;
+
+				this.setUpdateEvents(inputEl, 'keyup', 'blur');
+				this.setChangeEvents(inputEl, 'change');
+
+				dom.bindClassInstance(frameEl, this);
+
+				return frameEl;
+			}
+		})
+		ui["TextFieldStyled"] = TextFieldStyled;
+	})
+})
+//]]>
+</script>
+<style type="text/css">
+	@import url('/luci-static/resources/netping/fonts/fonts.css');
+	@import url('/luci-static/resources/netping/datepicker/datepicker.material.css');
+	@import url('/luci-static/resources/netping/jquery/jquery.highlight-within-textarea.css');
+	@import url('/luci-static/resources/netping/rslider/rslider.css');
+
+
+	.btn_spinner {
+		display: inline-block;
+		width: 0px;
+		height: 16px;
+		margin: 0 0px;
+	}
+
+	input[data-action="add"] {
+		width: 200px;
+		margin-bottom: 20px;
+		margin-top: 40px;
+	}
+
+	.cbi-button {
+		padding: 3px;
+		margin-left: 5px;
+		margin-right: 0px;
+
+	}
+
+
+	.td.cbi-section-actions {
+		text-align: left;
+	}
+
+.modal, #modal_overlay > .modal {
+	max-width: 1000px;
+}
+
+.message-template {
+	width: 70%;
+}
+
+#modal_overlay .modal > * {
+    flex-basis: 100%;
+}
+
+.cbi-dropdown:not(.btn):not(.cbi-button), .cbi-dynlist {
+    min-width: 50px;
+    max-width: 400px;
+    width: auto;
+    margin: 0 15px 5px 0px;
+}
+
+.alert-condition {
+	margin-top: 50px;	
+	margin-bottom: 30px;
+}
+
+
+.alert-condition input[type=text] {
+    width: 50px;
+    min-width: 50px;
+}
+
+.alert-condition table th {
+	font-size: 0.8em;
+	text-align: left;
+	padding: 8px 10px 5px 0px;
+}
+
+.alert-condition table td {
+	vertical-align: top;
+}
+.alert-condition table td .cbi-checkbox {
+	margin-top: 2px;
+}
+
+.alert-condition table td a {
+	padding-top: 3px;
+	display: block;
+}
+
+.alert-setting label {
+	font-weight: bolder;
+	font-size: 1.3em;
+}
+
+.alert-setting .cbi-value {
+	margin-left: 30px;
+}
+
+.alert-setting .cbi-value-field .cbi-dropdown:nth-child(2),
+.alert-setting .cbi-value-field .cbi-dropdown:nth-child(3) {
+	width: 130px;
+	margin: 0 15px 5px 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row {
+	display: inline-block;
+	min-width: 50px;
+    width: 50px;
+    margin: 0 15px 0px 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(5) {
+    margin-right: 0px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(2),
+.alert-setting .cbi-value-field .first-condition-row:nth-child(3) {
+	width: 130px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(4) div.cbi-dropdown,
+.alert-setting .cbi-value-field .first-condition-row:nth-child(1) div.cbi-dropdown
+	min-width: 50px;
+    width: 50px;
+}
+
+.alert-setting .cbi-value-field .first-condition-row:nth-child(1) div.cbi-dropdown {
+	visibility: hidden;
+}
+
+.alert-condition div.cbi-value-field div.first-condition-row:nth-child(1) div.cbi-dropdown {
+	width: 50px;
+	visibility: hidden;
+}
+
+.alert-condition div.cbi-value-field div.first-condition-row:nth-child(4) div.cbi-dropdown {
+	width: 50px;
+}
+
+.alert-setting .cbi-value-field {
+	margin-bottom: 5px;
+}
+
+.cbi-value-field {
+	width: 75%;
+}
+
+.cbi-dynlist {
+    height: auto;
+    min-height: 30px;
+    margin-right: 5px;
+    display: inline-flex;
+    flex-direction: unset;
+    max-width: 600px;
+}
+
+.cbi-dynlist .item {
+	margin-right: 10px;
+}
+
+.alert-setting .hours .cbi-dropdown {
+	width: 50px;
+	margin-right: 0px;
+}
+
+html body.lang_en.modal-overlay-active div#modal_overlay div.modal div.cbi-map.alert-setting div.cbi-map-section div.cbi-map-section-node div.cbi-value div.hours.cbi-value-field div.cbi-dropdown {
+	width: 50px;
+}
+
+a[name='tmpl-default'], a[name='tmpl-custom'] {
+	background-position-y: 2px;
+    background-size: 23%;
+    padding-left: 15px;
+    margin-left: 12px;
+	text-decoration: underline; 
+	float: right; 
+	display: none; 
+	cursor: pointer;
+	background-repeat: no-repeat;
+}
+
+/* content of NotesBanner */
+@supports (display: grid) {  
+  @media (min-width: 14em) {  
+    .rs-result-message dl {
+      display: grid;
+      grid-template-columns: auto 1fr; 
+    }
+    .rs-result-message dt {
+      min-width: 0; 
+    }
+    .rs-result-message dd {
+      margin: 0 0 0 1em;
+    }
+  }
+}
+
+.rs-result-message .logic {
+	font-weight: bolder;
+	font-size: 1.2em;
+	background-color: #ccc;
+	color: #828282;
+	padding: 1px 4px 1px 4px;
+	margin: 0 2px 0 2px;
+}
+
+.rs-result-message .comparision {
+	font-weight: bolder;
+	font-size: 1.2em;
+	background-color: #ccc;
+	color: #828282;
+	padding: 1px 4px 1px 4px;
+	margin: 0 2px 0 2px;
+}
+
+.rs-result-message .parenthesis {
+	font-weight: bolder;
+	font-size: 1.2em;
+	background-color: #ccc;
+	color: #828282;
+	padding: 1px 1px 1px 1px;
+	margin: 0 2px 0 2px;
+}
+
+.rs-container {
+	float: left;
+}
+
+.slider-container {
+	padding-bottom: 8em;
+}
+
+.rs-remove-the-slider {
+	text-decoration: underline;
+}
+
+.cbi-radio span {
+	font-size: 0.8em;
+	text-decoration: underline;
+	vertical-align: text-bottom;
+	cursor: pointer;
+}
+
+.cbi-value {
+	margin-bottom: 3em;
+}
+
+.cbi-value-title {
+	max-width: 200px;
+	width: auto;
+	font-weight: bold;
+}
+
+.cbi-value-title.memo-edit {
+	margin-top: 10px;
+}
+
+.cbi-value-field {
+	max-width: 800px;
+	width: auto;
+}
+
+.cbi-value-field.memo-edit div input {
+	border: 1px solid #333;
+	height: 45px;
+	background-color: #4C4C4C;
+	border-radius: 4px;
+	width: 100%;
+	font-family: 'Cuprum-VariableFont',Sans-Serif;
+	font-weight: 600;
+	font-size: 24px;
+	color: #FFFFFF;
+	padding-left: 20px;
+}
+
+.cbi-value-field table.cbi-2cols tr td {
+	padding-right: 15px;
+	padding-bottom: 10px;
+}
+
+.cbi-value-field table.cbi-2cols tr td input {
+	width: 300px;
+}
+
+.modal, 
+#modal_overlay > .modal {
+	padding: 2em 2em 4em;
+}
+
+.modal .cbi-map {
+	margin-top: 2.5em;
+}
+
+input, textarea, select, .cbi-dropdown ul {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+div.table.modal-section-param {
+	width: 100%;
+}
+
+div.table.modal-section-param .tr .td {
+	padding: 6px 0px 6px 10px;
+}
+
+div.table.modal-section-param input {
+	height: 20px;
+	font-family:'Courier-Prime',Sans-Serif;
+	color: #333;
+	text-align: right;
+	font-weight: normal;
+}
+
+div.cbi-value-field-flex {
+	display: flex;
+	flex-flow: row wrap;
+}
+
+@media (max-width: 600px) {  
+	div.cbi-value-field-flex {
+		flex-flow: column wrap;
+		border: 5px solid blue;
+	}
+}
+
+div.cbi-value-field-1col {
+	padding-right: 20px;
+	width: 30%;
+}
+
+div.cbi-value-field-2col {
+	flex-grow: 1;
+	width: 70%;
+}
+
+.table.modal-section-param input[type="text"] + .cbi-button, 
+.table.modal-section-param input[type="password"] + .cbi-button, 
+.table.modal-section-param select + .cbi-button {
+	height: 20px;
+	line-height: 19px;
+}
+
+.table.modal-section-param .cbi-dropdown {
+	height: 20px;
+}
+
+.table.modal-section-param .cbi-dropdown ul {
+	overflow: unset;
+}
+
+div.cbi-value-field-1col .cbi-dropdown:not(.btn):not(.cbi-button), .cbi-dynlist {
+    width: 100%;
+}
+
+</style>
+<script type="text/javascript">
+//<![CDATA[
+function add_relay() {
+	var action = "add",
+		relay_id = null,
+		payload = {"relay_data": {}, "globals_data": {}};
+	send_action(action, relay_id, payload);
+}
+
+function delete_relay(btn) {
+	var action = "delete",
+		relay_id = btn.getAttribute("data-relay"),
+		payload = {"relay_data": {}, "globals_data": {}};
+	send_action(action, relay_id, payload);
+}
+
+function switch_relay(btn) {
+	var action = "switch",
+		relay_id = btn.getAttribute("data-relay"),
+		payload = {"relay_data": {}, "globals_data": {}};
+	send_action(action, relay_id, payload);
+}
+
+function rename_relay(inp) {
+	var action = "rename",
+		relay_id = inp.getAttribute("data-relay"),
+		new_name = inp.value,
+		payload = {};
+
+
+	L.require("uci").then(function(uci) {
+		uci.load("settings").then(function(out){
+			var all_relays = uci.sections("settings", "relay") || [];
+			var found = false;
+			for (var r of all_relays) {
+				if(r[".name"] != "prototype" && r[".name"] != relay_id) {
+					for (var key in r) {
+						if(key == "name" && r[key] == new_name){
+							// SHOW NOTIFICATION
+							inp.classList.add("cbi-input-invalid");
+							var tooltip = document.getElementById(relay_id);
+							tooltip.style.display = "block";
+							found = true;
+							break;
+						}
+					}
+				}
+				if(found) break;
+			}
+			if(!found) {
+				// DO RENAME ACTION
+				var tooltip = document.getElementById(relay_id);
+				if(tooltip) tooltip.style.display = "none";
+				inp.classList.remove("cbi-input-invalid");
+
+				payload = {"relay_data": {"name": new_name}, "globals_data": {}};
+				send_action(action, relay_id, payload);
+			}
+		})
+	})
+}
+
+function send_action(action, relay_id, payload) {
+	var xhr = new XHR(false);
+	var btn_spinner = document.getElementById("btn_enable_spinner");;
+	spinner(btn_spinner, 1);
+	xhr.post('/cgi-bin/luci/admin/system/relay/action/'+ '%h/%h'.format(action, relay_id), payload,
+		function (x) {
+			if (!x) {
+				return;
+			}
+			spinner(btn_spinner, 0);
+			location.assign('/cgi-bin/luci/admin/system/relay');
+		}
+	);
+}
+
+// It is required to handle "Enter" key while editing Relay name
+// This function disable general form submit from Enter pressing
+window.addEventListener('keydown',function(e) {
+	if(e.target.name=="relay_name") {
+		var relay_id = e.target.getAttribute("data-relay");
+		var tooltip = document.getElementById(relay_id);
+		tooltip.style.display = "none";
+		e.target.classList.remove("cbi-input-invalid");
+		if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13) {
+			if(e.target.nodeName=='INPUT'&&e.target.type=='text') { 
+				e.preventDefault();
+				rename_relay(e.target)
+				return false;
+			}
+		}
+	}
+},true);
+
+
+function spinner(element, state) {
+	if (state === 1) {
+		element.style.width = "16px";
+		element.innerHTML = '<img src="/luci-static/resources/icons/loading.gif" alt="Loading" width="16" height="16" style="vertical-align:middle" />';
+	}
+	else {
+		element.style.width = "0px";
+		element.innerHTML = '';
+	}
+}
+
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+
+// gets a record from uci like <settings.globals.proto='first.Протокол 1' 'second.Протокол 2' 'third.Протокол 3'>
+// returns object like {"first": "Протокол 1", "second": "Протокол 2", "third": "Протокол 3"}
+function widgetPopulation(uci_section, uci) {
+	var section = uci.get("netping_luci_relay", uci_section) || [];
+	return function(uci_option) {
+		var population = {}
+		if (section[uci_option]) {
+			section[uci_option].forEach(function(p) {
+				population[p.split(".")[0]] = p.split(".")[1];
+			})
+		}
+		return population
+	}
+}
+
+function edit_relay(btn) {
+	var globals_data = {}
+	var relay_id = btn.getAttribute("data-relay") || null;
+	L.require("ui").then(function(ui){
+		L.require("uci").then(function(uci) {
+			uci.load("netping_luci_relay").then(function(out){
+				globals_data = uci.get("netping_luci_relay", "globals");
+				var globals = widgetPopulation("globals", uci),
+					relay_data = uci.get("netping_luci_relay", relay_id),
+					embedded = relay_data["embedded"] == '1' ? true : false
+
+				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 
+					disabled: embedded, 
+					sort: true });
+
+				var state_on_term = new ui.Textfield(globals("state")["1"], { 
+					optional: false,
+					datatype: "rangelength(2,64)" });
+
+				var state_off_term = new ui.Textfield(globals("state")["0"], { 
+					optional: false,
+					datatype: "rangelength(2,64)" });
+
+				// Make dropdown for settings.relay.number = 1..16
+				var maxn = globals_data["relay_max_number"] || '0'
+				var rnums = {1: 1}
+				for (var i=1; i <= parseInt(maxn, 10); i++) {
+					rnums[i] = i
+				}
+				var relay_number = new ui.Dropdown(relay_data["number"], rnums, { disabled: embedded, sort: false });
+
+				var dest_addr = new ui.Textfield(relay_data["dest_addr"], { 
+					maxlength: 128, 
+					disabled: embedded,
+					datatype: "host" });
+
+				var dest_addr_port = new ui.Textfield(relay_data["dest_addr"] + ":" + relay_data["dest_port"], { 
+						maxlength: 128, 
+						disabled: embedded,
+						datatype: "hostport"
+					});
+
+
+
+				var dest_port = new ui.Textfield(relay_data["dest_port"], { 
+					disabled: embedded,
+					datatype: "port" });
+
+				var restart_time = new ui.TextFieldStyled(relay_data["restart_time"], { 
+						maxlength: 3, 
+						datatype: "uinteger",
+						htmlStyle: "width: 70px"	
+					});
+
+				var login = new ui.TextFieldStyled(relay_data["login"], { 
+					disabled: embedded, 
+					datatype: "rangelength(3,8)",
+					htmlStyle: "width: 150px"
+				});
+
+				var password = new ui.TextFieldStyled(relay_data["password"], { 
+						disabled: embedded, 
+						password: true,
+						datatype: "rangelength(4,16)",
+						htmlStyle: "width: 96px"
+					});
+
+				var memo = new ui.Textfield(relay_data["name"], {
+					datatype: "rangelength(4,128)" });
+
+
+				L.showModal('Редактировать реле', [
+					E('div', { class: 'cbi-map' }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title memo-edit' }, _('Памятка') + ":"),
+									E('div', { class: 'cbi-value-field memo-edit' }, [
+										memo.render()
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title'}, _('Расшифровка состояния') + ":"),
+									E('div', { class: 'cbi-value-field' }, [
+										E('table', {class: 'cbi-2cols'}, [
+											E('tr', [E('td', [state_on_term.render()]), E('td', _(' - соответствует состоянию "Включено"'))]),
+											E('tr', [E('td', [state_off_term.render()]), E('td', _(' - соответствует состоянию "Выключено"'))])
+										])
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title' }, _('Протокол') + ":"),
+									E('div', { class: 'cbi-value-field' }, [
+										E('div', { class: 'cbi-value-field-flex'}, [
+											E('div', { class: 'cbi-value-field-1col'}, [proto.render()]),
+											E('div', { class: 'cbi-value-field-2col'}, [
+												E('div', { class: 'table modal-section-param'}, [
+													E('div', {class: 'tr table-titles'}, [
+														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола HTTP")),
+														E('div', {class: 'th'}, _("Значение")),
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Адрес/порт удалённого реле"),
+														E('div', {class: 'td', style: "text-align: right;"}, [dest_addr_port.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-2'}, [
+														E('div', {class: 'td'}, "Логин"),
+														E('div', {class: 'td', style: "text-align: right;"}, [login.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Пароль"),
+														E('div', {class: 'td', style: "text-align: right;"}, [password.render()])
+													])
+												]),
+												E('div', { class: 'table modal-section-param'}, [
+													E('div', {class: 'tr table-titles'}, [
+														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры подключения реле")),
+														E('div', {class: 'th'}, _("Значение")),
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Номер реле на удалённом устройстве"),
+														E('div', {class: 'td', style: "text-align: right;"}, [relay_number.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-2'}, [
+														E('div', {class: 'td'}, "Время перезагрузки реле"),
+														E('div', {class: 'td', style: "text-align: right;"}, [restart_time.render()])
+													])
+												]),
+												E('button', {
+													class: 'cbi-button cbi-button-apply',
+													disabled: 'disabled',
+													style: 'display: initial;'
+												}, _('Скрыть параметры подключения реле') )
+											])
+										])
+									])
+								]),
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+						' ',
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+								// Check all form validity
+								var widget_list = [proto, restart_time, dest_addr, dest_port, relay_number, login, password, state_on_term, state_off_term];
+								var form_valid = true;
+								for(var w of widget_list) {
+									if(!w.isValid()) {
+										form_valid = false
+										break;
+									}
+								}
+								if (form_valid) {
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["dest_addr"] = dest_addr.getValue()
+									relay_data["dest_port"] = dest_port.getValue()
+									relay_data["number"] = relay_number.getValue()
+									relay_data["login"] = login.getValue()
+									relay_data["password"] = password.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+									return handleEdit(relay_id, relay_data, globals_data);
+								}
+								else {
+									return 0;
+								}
+							})
+						}, _('Сохранить'))
+					])
+				]);
+				
+
+				// Open modal
+				/*
+				L.showModal('Редактировать реле "' + relay_data["name"] +'"', [
+					E('div', { class: 'cbi-map', 'style': "margin-top: 1em;" }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Протокол') + ":"),
+									E('div', { class: 'cbi-value' }, [
+										proto.render()
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса ON') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_on_term.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса OFF') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_off_term.render(),
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Номер реле на удалённом устройстве') + ":"),
+										E('div', { class: 'cbi-value' }, [
+											relay_number.render()
+										])
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Время перезагрузки реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										restart_time.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Адрес удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_addr.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Порт удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_port.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Логин') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										login.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Пароль') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										password.render(),
+									])
+								])
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+						' ',
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+								// Check all form validity
+								var widget_list = [proto, restart_time, dest_addr, dest_port, relay_number, login, password, state_on_term, state_off_term];
+								var form_valid = true;
+								for(var w of widget_list) {
+									if(!w.isValid()) {
+										form_valid = false
+										break;
+									}
+								}
+								if (form_valid) {
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["dest_addr"] = dest_addr.getValue()
+									relay_data["dest_port"] = dest_port.getValue()
+									relay_data["number"] = relay_number.getValue()
+									relay_data["login"] = login.getValue()
+									relay_data["password"] = password.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+									return handleEdit(relay_id, relay_data, globals_data);
+								}
+								else {
+									return 0;
+								}
+							})
+						}, _('Сохранить'))
+					])
+				]);
+				*/
+			})	
+		})
+	})
+}
+function handleEdit(relay_id, relay_data, globals_data) {
+	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
+}
+//]]>
+</script>
+
+ 
+<div id="view">
+	<h2 name="content">Управление реле</h2>
+	<div class="cbi-map-descr">В данной таблице приведены локальные и удалённые  реле. Вы можете добавить, переименовать, переключить и настроить реле. Локальные реле удалить невозможно, т.к. они встроены в устройство.</div>
+	<input type="button" class="cbi-button cbi-button-apply" style="margin-bottom: 1em;"
+		onclick="add_relay(this)"
+		value="Добавить реле"/>
+
+	<div class="table">
+		<div class="tr table-titles">
+			<div class="th" style="width: 100%;">Памятка</div>
+			<div class="th">Тип</div>
+			<div class="th">Состояние</div>
+			<div class="th">Статус</div>
+			<div class="th center nowrap cbi-section-actions">Управление</div>
+		</div>
+		
+			<div class="tr cbi-rowstyle-1">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text"
+					onchange="rename_relay(this)"
+					name="relay_name"
+					value="Серверный шкаф основной"
+					data-relay="cfg042442"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="cfg042442" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
+				</div>
+				<div class="td" data-title="Тип">
+					Локально
+				</div>
+				<div class="td" data-title="Состояние">
+					Включено ON
+				</div>
+				<div class="td" data-title="Состояние">
+					Норма
+				</div>
+				<div class="nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
+						value="Переключить"
+						data-relay="cfg042442" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="cfg042442" 
+						data-proto="" 
+						data-embedded="1" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='/cgi-bin/luci/admin/system/alerts?relayid=cfg042442'
+						value="Уведомления"
+						data-relay="cfg042442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="cfg042442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="cfg042442" 
+						style="display: initial;" />
+
+					
+				</div>
+			</div>
+			
+		
+			<div class="tr cbi-rowstyle-2">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text"
+					onchange="rename_relay(this)"
+					name="relay_name"
+					value="Резервный серверный шкаф"
+					data-relay="cfg052442"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="cfg052442" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
+				</div>
+				<div class="td" data-title="Тип">
+					Локально
+				</div>
+				<div class="td" data-title="Состояние">
+					Выключено OFF
+				</div>
+				<div class="td" data-title="Состояние">
+					Норма
+				</div>
+				<div class="nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
+						value="Переключить"
+						data-relay="cfg052442" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="cfg052442" 
+						data-proto="" 
+						data-embedded="1" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='/cgi-bin/luci/admin/system/alerts?relayid=cfg052442'
+						value="Уведомления"
+						data-relay="cfg052442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="cfg052442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="cfg052442" 
+						style="display: initial;" />
+
+					
+				</div>
+			</div>
+			
+		
+			<div class="tr cbi-rowstyle-1">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text"
+					onchange="rename_relay(this)"
+					name="relay_name"
+					value="Пожарная сигнализация"
+					data-relay="cfg062442"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="cfg062442" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
+				</div>
+				<div class="td" data-title="Тип">
+					Удалённо
+				</div>
+				<div class="td" data-title="Состояние">
+					Включено ON
+				</div>
+				<div class="td" data-title="Состояние">
+					Перезагрузка
+				</div>
+				<div class="nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
+						value="Переключить"
+						data-relay="cfg062442" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="cfg062442" 
+						data-proto="second" 
+						data-embedded="0" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='/cgi-bin/luci/admin/system/alerts?relayid=cfg062442'
+						value="Уведомления"
+						data-relay="cfg062442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="cfg062442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="cfg062442" 
+						style="display: initial;" />
+
+					
+					<input type="button" class="cbi-button cbi-button-reset" onclick="delete_relay(this)"
+						value="Удалить"
+						data-relay="cfg062442"
+						style="display: initial;" />
+					
+				</div>
+			</div>
+			
+		
+			<div class="tr cbi-rowstyle-2">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text"
+					onchange="rename_relay(this)"
+					name="relay_name"
+					value="Relay 40001"
+					data-relay="cfg092442"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="cfg092442" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
+				</div>
+				<div class="td" data-title="Тип">
+					Удалённо
+				</div>
+				<div class="td" data-title="Состояние">
+					Выключено OFF
+				</div>
+				<div class="td" data-title="Состояние">
+					Норма
+				</div>
+				<div class="nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
+						value="Переключить"
+						data-relay="cfg092442" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="cfg092442" 
+						data-proto="first" 
+						data-embedded="0" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='/cgi-bin/luci/admin/system/alerts?relayid=cfg092442'
+						value="Уведомления"
+						data-relay="cfg092442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="cfg092442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="cfg092442" 
+						style="display: initial;" />
+
+					
+					<input type="button" class="cbi-button cbi-button-reset" onclick="delete_relay(this)"
+						value="Удалить"
+						data-relay="cfg092442"
+						style="display: initial;" />
+					
+				</div>
+			</div>
+			
+		
+			<div class="tr cbi-rowstyle-1">
+				<div class="td" data-title="Памятка" style="text-align: left;">
+					<input type="text"
+					onchange="rename_relay(this)"
+					name="relay_name"
+					value="Relay 5"
+					data-relay="cfg0a2442"/>
+					<script type="text/javascript">L.require('menu-bootstrap')</script>
+					<div id="cfg0a2442" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
+				</div>
+				<div class="td" data-title="Тип">
+					Удалённо
+				</div>
+				<div class="td" data-title="Состояние">
+					Выключено OFF
+				</div>
+				<div class="td" data-title="Состояние">
+					Норма
+				</div>
+				<div class="nowrap cbi-section-actions td">
+					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
+						value="Переключить"
+						data-relay="cfg0a2442" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick="edit_relay(this)"
+						value="Настройки"
+						data-action="edit"
+						data-relay="cfg0a2442" 
+						data-proto="first" 
+						data-embedded="0" 
+						style="display: initial;" />
+					<input type="button" class="cbi-button cbi-button-apply" onclick=window.location='/cgi-bin/luci/admin/system/alerts?relayid=cfg0a2442'
+						value="Уведомления"
+						data-relay="cfg0a2442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Сторож"
+						data-relay="cfg0a2442" 
+						style="display: initial;" />
+
+					<input type="button" class="cbi-button cbi-button-apply"
+						disabled
+						value="Расписание"
+						data-relay="cfg0a2442" 
+						style="display: initial;" />
+
+					
+					<input type="button" class="cbi-button cbi-button-reset" onclick="delete_relay(this)"
+						value="Удалить"
+						data-relay="cfg0a2442"
+						style="display: initial;" />
+					
+				</div>
+			</div>
+			
+		
+	</div>
+</div>
+<span id="btn_enable_spinner" class="btn_spinner"></span>
+
+
+</form>
+
+<script type="text/javascript">cbi_init();</script>
+
+
+
+   <footer>
+    <a href="https://github.com/openwrt/luci">Powered by LuCI openwrt-19.07 branch (git-20.247.75781-0d0ab01)</a> / OpenWrt 19.07.4 r11208-ce6496d796
+    <ul class="breadcrumb pull-right" id="modemenu" style="display:none"></ul>
+   </footer>
+  </div>
+  
+  <script type="text/javascript">L.require('menu-bootstrap')</script>
+  
+ </body>
+</html>
+
+
+

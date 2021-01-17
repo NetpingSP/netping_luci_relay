@@ -1,12 +1,12 @@
 module("luci.controller.netping_luci_relay.index", package.seeall)
 
-local config = "settings"
+local config = "netping_luci_relay"
 local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 
 function index()
-	if nixio.fs.access("/etc/config/settings") then
+	if nixio.fs.access("/etc/config/netping_luci_relay") then
 		entry({"admin", "system", "relay"}, cbi("netping_luci_relay/relay"), "Relays", 30)
 		entry({"admin", "system", "relay", "action"}, call("do_relay_action"), nil).leaf = true
 		entry({"admin", "system", "alerts"}, cbi("netping_luci_relay/alert"), nil).leaf = true

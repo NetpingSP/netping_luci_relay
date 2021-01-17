@@ -9,16 +9,16 @@
 <%+netping_luci_relay/alert.js%>
 
 <% --[[=========== UI WIDGETS ==========]] %>
-<%+netping_luci_relay/ui_widgets/UIRangeSlider%>
-<%+netping_luci_relay/ui_widgets/UIEventBus%>
-<%+netping_luci_relay/ui_widgets/UITextareaHighlighted%>
-<%+netping_luci_relay/ui_widgets/UINotesBanner%>
-<%+netping_luci_relay/ui_widgets/UINotesBannerCond%>
+<%+netping_luci_relay/ui_widgets/UIRangeSlider.js%>
+<%+netping_luci_relay/ui_widgets/UIEventBus.js%>
+<%+netping_luci_relay/ui_widgets/UITextareaHighlighted.js%>
+<%+netping_luci_relay/ui_widgets/UINotesBanner.js%>
+<%+netping_luci_relay/ui_widgets/UINotesBannerCond.js%>
 
 <% --[[=========== LUA BACKEND ==========]] %>
 
 <%
-	local config = "settings"
+	local config = "netping_luci_relay"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 

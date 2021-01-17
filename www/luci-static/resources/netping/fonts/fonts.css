@@ -19,9 +19,9 @@
 @font-face {
   font-family: 'Cuprum-VariableFont';
   src: url('Cuprum-VariableFont_wght.eot');
-  src: url('variable_fonts/Cuprum-VariableFont_wght.woff2') format('woff2 supports variations'), 
-       url('variable_fonts/Cuprum-VariableFont_wght.woff2') format('woff2-variations'),
-       url('variable_fonts/Cuprum-VariableFont_wght.ttf') format('truetype'), 
+  src: url('Cuprum-VariableFont_wght.woff2') format('woff2 supports variations'), 
+       url('Cuprum-VariableFont_wght.woff2') format('woff2-variations'),
+       url('Cuprum-VariableFont_wght.ttf') format('truetype'), 
        url('Cuprum-VariableFont_wght.svg') format('svg');
   font-weight: 100 1000;
   font-stretch: 25% 151%;
@@ -30,8 +30,8 @@
 @font-face {
   font-family: 'Cuprum-Italic-VariableFont_wght';
   src: url('Cuprum-Italic-VariableFont_wght.eot');
-  src: url('variable_fonts/Cuprum-Italic-VariableFont_wght.woff') format('woff2 supports variations'), 
-       url('variable_fonts/Cuprum-Italic-VariableFont_wght.woff') format('woff2-variations'), 
+  src: url('Cuprum-Italic-VariableFont_wght.woff') format('woff2 supports variations'), 
+       url('Cuprum-Italic-VariableFont_wght.woff') format('woff2-variations'), 
        url('Cuprum-Italic-VariableFont_wght.ttf') format('truetype'), 
        url('Cuprum-Italic-VariableFont_wght.svg') format('svg');
   font-weight: 100 1000;

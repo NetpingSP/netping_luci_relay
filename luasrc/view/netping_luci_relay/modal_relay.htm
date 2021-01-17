@@ -1,5 +1,5 @@
 <%
-	local config = "settings"
+	local config = "netping_luci_relay"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 	local globals = uci:get_all(config, "globals")
@@ -11,7 +11,7 @@
 // gets a record from uci like <settings.globals.proto='first.Протокол 1' 'second.Протокол 2' 'third.Протокол 3'>
 // returns object like {"first": "Протокол 1", "second": "Протокол 2", "third": "Протокол 3"}
 function widgetPopulation(uci_section, uci) {
-	var section = uci.get("settings", uci_section) || [];
+	var section = uci.get("<%=config%>", uci_section) || [];
 	return function(uci_option) {
 		var population = {}
 		if (section[uci_option]) {
@@ -28,10 +28,10 @@ function edit_relay(btn) {
 	var relay_id = btn.getAttribute("data-relay") || null;
 	L.require("ui").then(function(ui){
 		L.require("uci").then(function(uci) {
-			uci.load("settings").then(function(out){
-				globals_data = uci.get("settings", "globals");
+			uci.load("<%=config%>").then(function(out){
+				globals_data = uci.get("<%=config%>", "globals");
 				var globals = widgetPopulation("globals", uci),
-					relay_data = uci.get("settings", relay_id),
+					relay_data = uci.get("<%=config%>", relay_id),
 					embedded = relay_data["embedded"] == '1' ? true : false
 
 				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 

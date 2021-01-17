@@ -1,5 +1,5 @@
 <%
-	local config = "settings"
+	local config = "netping_luci_relay"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 	local fs = require "nixio.fs"
@@ -63,7 +63,7 @@ function edit_alert(btn) {
 		L.require("dom").then(function(dom){
 			L.require("ui").then(function(ui){
 				L.require("uci").then(function(uci) {
-					uci.load("settings").then(function(out){
+					uci.load("<%=config%>").then(function(out){
 
 						window.EventBus = new ui.EventBus()
 						var EventBus_widget = window.EventBus.render()

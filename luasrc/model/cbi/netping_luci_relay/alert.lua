@@ -1,5 +1,5 @@
 
-local config, title = "settings", "Settings"
+local config, title = "netping_luci_relay", "Alerts"
 
 m = Map(config, title)
 m.template = "netping_luci_relay/alert_list"
