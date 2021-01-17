@@ -6,6 +6,8 @@ OpenWrt LuCI page for relay management.
 
 ## Структура файлов
 
+Данный модуль, начиная с ветки v5, приведён в соответствие с [Web интерфейс - структура файлов - рекомендации](https://netping.atlassian.net/wiki/spaces/PROJ/pages/2728821288/Web+-+LuCI)
+
 ```bash
 ├── control
 ├── dev
