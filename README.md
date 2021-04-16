@@ -50,6 +50,7 @@ OpenWrt LuCI page for relay management.
 4. Установить пакет luci_compat при помощи следующих команд:
 * **opkg update**
 * **opkg install luci_compat**
+5. Перезапустить виртуальную машину
 
 ## ToDo
 
