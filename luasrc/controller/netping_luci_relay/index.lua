@@ -5,6 +5,12 @@ local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 
+
+function notify_backend(action, relay_id, payload)
+	util.ubus("netping_relay", "refresh", {action = action, relay_id = relay_id, payload = payload})
+end
+
+
 function index()
 	if nixio.fs.access("/etc/config/netping_luci_relay") then
 		entry({"admin", "system", "relay"}, cbi("netping_luci_relay/relay"), "Relays", 30)
@@ -13,6 +19,7 @@ function index()
 		entry({"admin", "system", "alerts", "action"}, call("do_action"), nil).leaf = true
 	end
 end
+
 
 function do_relay_action(action, relay_id)
 	local payload = {}
@@ -29,7 +36,7 @@ function do_relay_action(action, relay_id)
 			prototype["dest_port"] = globals["default_port"]
 			prototype["restart_time"] = globals["restart_time"]
 			for _, k in pairs({".name", ".anonymous", ".type"}) do prototype[k] = nil end
-			
+
 			uci:section(config, "relay", nil, prototype)
 			uci:commit(config)
 		end,
@@ -84,6 +91,7 @@ function do_relay_action(action, relay_id)
 	if commands[action] then
 		commands[action](relay_id, payload)
 		commands["default"]()
+		notify_backend(action, relay_id, util.serialize_json(payload))
 	end
 end
 
@@ -93,13 +101,13 @@ function do_alert_action(action, alert_id)
 	payload["alert_data"] = luci.jsonc.parse(luci.http.formvalue("alert_data"))
 	local commands = {
 		add = function(...)
-			
+
 		end,
 		delete = function(alert_id, ...)
 
 		end,
 		edit = function(alert_id, payloads)
-			
+
 		end,
 		default = function(...)
 			http.prepare_content("text/plain")
