@@ -1,11 +1,11 @@
-SHELL := /bin/bash
+# SHELL := /bin/bash
 
 VM ?= openwrt.vm
 DST ?= /root/netping_luci_relay/
 
 install:
 	@echo "== Install netping_luci_relay"
-	@cp -fR luasrc/* /usr/lib/lua/luci/
+	@cp -fR luasrc/* /usr/lib/lua/
 	@cp -fR www/* /www/
 	@cp -fR root/etc/* /etc/
 	@/etc/init.d/uhttpd restart

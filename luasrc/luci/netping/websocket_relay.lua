@@ -59,4 +59,3 @@ local server = websocket.server.ev.listen
 }
 print('Open web browser and refresh!')
 loop:loop()
-
