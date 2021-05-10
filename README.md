@@ -51,7 +51,7 @@ OpenWrt LuCI page for relay management.
 4. Установить пакет luci_compat при помощи следующих команд:
 * **opkg update**
 * **opkg install luci_compat lua-ev libsocket luabitop**
-5. Перезапустить виртуальную машину
+
 
 ## Инструкция по тестирование Websocket
 
@@ -62,8 +62,6 @@ OpenWrt LuCI page for relay management.
 ![me](https://github.com/Netping/netping_luci_relay/blob/v5/wsport_lua.png)
 ![me](https://github.com/Netping/netping_luci_relay/blob/v5/wsport_js.png)
 
-
-
 1. git clone https://github.com/Netping/netping_luci_relay.git
 2. cd ./netping_luci_relay
 3. make install
@@ -72,6 +70,8 @@ OpenWrt LuCI page for relay management.
 6. Open browser URL: http://192.168.0.24/cgi-bin/luci/admin/system/relay
 7. Play with "state" of relay using the command:
 ```$ uci set netping_luci_relay.cfg042442.state=1```
+
+[Screencast](https://www.youtube.com/watch?v=FQKr_YZB6S0)
 
 ## ToDo
 
