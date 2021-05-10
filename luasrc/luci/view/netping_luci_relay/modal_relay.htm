@@ -1,0 +1,298 @@
+<%
+	local config = "netping_luci_relay"
+	local uci = require "luci.model.uci".cursor()
+	local util = require "luci.util"
+	local globals = uci:get_all(config, "globals")
+	--util.dumptable(globals)
+%>
+<script type="text/javascript">
+//<![CDATA[
+
+// gets a record from uci like <settings.globals.proto='first.Протокол 1' 'second.Протокол 2' 'third.Протокол 3'>
+// returns object like {"first": "Протокол 1", "second": "Протокол 2", "third": "Протокол 3"}
+function widgetPopulation(uci_section, uci) {
+	var section = uci.get("<%=config%>", uci_section) || [];
+	return function(uci_option) {
+		var population = {}
+		if (section[uci_option]) {
+			section[uci_option].forEach(function(p) {
+				population[p.split(".")[0]] = p.split(".")[1];
+			})
+		}
+		return population
+	}
+}
+
+function edit_relay(btn) {
+	var globals_data = {}
+	var relay_id = btn.getAttribute("data-relay") || null;
+	L.require("ui").then(function(ui){
+		L.require("uci").then(function(uci) {
+			uci.load("<%=config%>").then(function(out){
+				globals_data = uci.get("<%=config%>", "globals");
+				var globals = widgetPopulation("globals", uci),
+					relay_data = uci.get("<%=config%>", relay_id),
+					embedded = relay_data["embedded"] == '1' ? true : false
+
+				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 
+					disabled: embedded, 
+					sort: true });
+
+				var state_on_term = new ui.Textfield(globals("state")["1"], { 
+					optional: false,
+					datatype: "rangelength(2,64)" });
+
+				var state_off_term = new ui.Textfield(globals("state")["0"], { 
+					optional: false,
+					datatype: "rangelength(2,64)" });
+
+				// Make dropdown for settings.relay.number = 1..16
+				var maxn = globals_data["relay_max_number"] || '0'
+				var rnums = {1: 1}
+				for (var i=1; i <= parseInt(maxn, 10); i++) {
+					rnums[i] = i
+				}
+				var relay_number = new ui.Dropdown(relay_data["number"], rnums, { disabled: embedded, sort: false });
+
+				var dest_addr = new ui.Textfield(relay_data["dest_addr"], { 
+					maxlength: 128, 
+					disabled: embedded,
+					datatype: "host" });
+
+				var dest_addr_port = new ui.Textfield(relay_data["dest_addr"] + ":" + relay_data["dest_port"], { 
+						maxlength: 128, 
+						disabled: embedded,
+						datatype: "hostport"
+					});
+
+
+
+				var dest_port = new ui.Textfield(relay_data["dest_port"], { 
+					disabled: embedded,
+					datatype: "port" });
+
+				var restart_time = new ui.TextFieldStyled(relay_data["restart_time"], { 
+						maxlength: 3, 
+						datatype: "uinteger",
+						htmlStyle: "width: 70px"	
+					});
+
+				var login = new ui.TextFieldStyled(relay_data["login"], { 
+					disabled: embedded, 
+					datatype: "rangelength(3,8)",
+					htmlStyle: "width: 150px"
+				});
+
+				var password = new ui.TextFieldStyled(relay_data["password"], { 
+						disabled: embedded, 
+						password: true,
+						datatype: "rangelength(4,16)",
+						htmlStyle: "width: 96px"
+					});
+
+				var memo = new ui.Textfield(relay_data["name"], {
+					datatype: "rangelength(4,128)" });
+
+
+				L.showModal('Редактировать реле', [
+					E('div', { class: 'cbi-map' }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title memo-edit' }, _('Памятка') + ":"),
+									E('div', { class: 'cbi-value-field memo-edit' }, [
+										memo.render()
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title'}, _('Расшифровка состояния') + ":"),
+									E('div', { class: 'cbi-value-field' }, [
+										E('table', {class: 'cbi-2cols'}, [
+											E('tr', [E('td', [state_on_term.render()]), E('td', _(' - соответствует состоянию "Включено"'))]),
+											E('tr', [E('td', [state_off_term.render()]), E('td', _(' - соответствует состоянию "Выключено"'))])
+										])
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title' }, _('Протокол') + ":"),
+									E('div', { class: 'cbi-value-field' }, [
+										E('div', { class: 'cbi-value-field-flex'}, [
+											E('div', { class: 'cbi-value-field-1col'}, [proto.render()]),
+											E('div', { class: 'cbi-value-field-2col'}, [
+												E('div', { class: 'table modal-section-param'}, [
+													E('div', {class: 'tr table-titles'}, [
+														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола HTTP")),
+														E('div', {class: 'th'}, _("Значение")),
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Адрес/порт удалённого реле"),
+														E('div', {class: 'td', style: "text-align: right;"}, [dest_addr_port.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-2'}, [
+														E('div', {class: 'td'}, "Логин"),
+														E('div', {class: 'td', style: "text-align: right;"}, [login.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Пароль"),
+														E('div', {class: 'td', style: "text-align: right;"}, [password.render()])
+													])
+												]),
+												E('div', { class: 'table modal-section-param'}, [
+													E('div', {class: 'tr table-titles'}, [
+														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры подключения реле")),
+														E('div', {class: 'th'}, _("Значение")),
+													]),
+													E('div', {class: 'tr cbi-rowstyle-1'}, [
+														E('div', {class: 'td'}, "Номер реле на удалённом устройстве"),
+														E('div', {class: 'td', style: "text-align: right;"}, [relay_number.render()])
+													]),
+													E('div', {class: 'tr cbi-rowstyle-2'}, [
+														E('div', {class: 'td'}, "Время перезагрузки реле"),
+														E('div', {class: 'td', style: "text-align: right;"}, [restart_time.render()])
+													])
+												]),
+												E('button', {
+													class: 'cbi-button cbi-button-apply',
+													disabled: 'disabled',
+													style: 'display: initial;'
+												}, _('Скрыть параметры подключения реле') )
+											])
+										])
+									])
+								]),
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+						' ',
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+								// Check all form validity
+								var widget_list = [proto, restart_time, dest_addr, dest_port, relay_number, login, password, state_on_term, state_off_term];
+								var form_valid = true;
+								for(var w of widget_list) {
+									if(!w.isValid()) {
+										form_valid = false
+										break;
+									}
+								}
+								if (form_valid) {
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["dest_addr"] = dest_addr.getValue()
+									relay_data["dest_port"] = dest_port.getValue()
+									relay_data["number"] = relay_number.getValue()
+									relay_data["login"] = login.getValue()
+									relay_data["password"] = password.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+									return handleEdit(relay_id, relay_data, globals_data);
+								}
+								else {
+									return 0;
+								}
+							})
+						}, _('Сохранить'))
+					])
+				]);
+				
+
+				// Open modal
+				/*
+				L.showModal('Редактировать реле "' + relay_data["name"] +'"', [
+					E('div', { class: 'cbi-map', 'style': "margin-top: 1em;" }, [
+						E('div', { class: 'cbi-map-section' }, [
+							E('div', { class: 'cbi-map-section-node' }, [
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Протокол') + ":"),
+									E('div', { class: 'cbi-value' }, [
+										proto.render()
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса ON') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_on_term.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Расшифровка статуса OFF') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										state_off_term.render(),
+									])
+								]),
+								E('div', { class: 'cbi-value' }, [
+									E('div', { class: 'cbi-value' }, [
+										E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Номер реле на удалённом устройстве') + ":"),
+										E('div', { class: 'cbi-value' }, [
+											relay_number.render()
+										])
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Время перезагрузки реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										restart_time.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Адрес удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_addr.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Порт удалённого реле') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										dest_port.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Логин') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										login.render(),
+									]),
+									E('label', { 'class': 'cbi-value-title', 'style': 'padding-right:2rem;' }, _('Пароль') + ":"),
+									E('div', { class: 'cbi-value', style: 'width: auto;' }, [
+										password.render(),
+									])
+								])
+							])
+						])
+					]),
+					E('div', { class: 'cbi-value-field' }, [
+						E('div', { class: 'btn', click: L.hideModal }, _('Закрыть')),
+						' ',
+						E('div', { class: 'btn success', "name": "apply",
+							'click': ui.createHandlerFn(this, function() {
+								// Check all form validity
+								var widget_list = [proto, restart_time, dest_addr, dest_port, relay_number, login, password, state_on_term, state_off_term];
+								var form_valid = true;
+								for(var w of widget_list) {
+									if(!w.isValid()) {
+										form_valid = false
+										break;
+									}
+								}
+								if (form_valid) {
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["dest_addr"] = dest_addr.getValue()
+									relay_data["dest_port"] = dest_port.getValue()
+									relay_data["number"] = relay_number.getValue()
+									relay_data["login"] = login.getValue()
+									relay_data["password"] = password.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+									return handleEdit(relay_id, relay_data, globals_data);
+								}
+								else {
+									return 0;
+								}
+							})
+						}, _('Сохранить'))
+					])
+				]);
+				*/
+			})	
+		})
+	})
+}
+function handleEdit(relay_id, relay_data, globals_data) {
+	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
+}
+//]]>
+</script>
