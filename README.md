@@ -49,8 +49,8 @@ OpenWrt LuCI page for relay management.
 2. Скопировать файлы из /www в соответствующие подпапки устройства **/www**
 3. Скопировать файлы из /root/etc в соответствующие подпапки устройства **/etc**
 4. Установить пакет luci_compat при помощи следующих команд:
-* **opkg update**
-* **opkg install luci_compat lua-ev libsocket luabitop**
+* opkg update
+* opkg install luci-compat lua-ev luasocket luabitop
 
 
 ## Инструкция по тестирование Websocket
