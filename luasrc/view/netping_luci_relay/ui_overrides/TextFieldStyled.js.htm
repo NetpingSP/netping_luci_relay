@@ -47,6 +47,11 @@ L.require("dom").then(function(dom)	{
 
 				return this.bind(frameEl);
 			},
+			/** @override */
+			getValue: function() {
+				var inputEl = this.node.querySelector('input');
+				return inputEl.value;
+			},
 			bind: function(frameEl) {
 				var inputEl = frameEl.querySelector('input');
 
