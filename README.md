@@ -9,49 +9,56 @@ OpenWrt LuCI page for relay management.
 Данный модуль, начиная с ветки v5, приведён в соответствие с [Web интерфейс - структура файлов - рекомендации](https://netping.atlassian.net/wiki/spaces/PROJ/pages/2728821288/Web+-+LuCI)
 
 ```bash
+.
 ├── control
 ├── luasrc
-│   ├── luci
-│   │   ├── controller
-│   │   │   └── netping_luci_relay
-│   │   ├── model
-│   │   │   └── cbi
-│   │   │       └── netping_luci_relay
-│   │   ├── netping
-│   │   └── view
+│   ├── controller
+│   │   └── netping_luci_relay
+│   ├── model
+│   │   └── cbi
 │   │       └── netping_luci_relay
-│   │           ├── ui_overrides
-│   │           ├── ui_utils
-│   │           └── ui_widgets
-│   └── websocket
-├── root
-│   └── etc
-│       ├── config
+│   └── view
 │       └── netping_luci_relay
-│           └── template
-│               └── default
-└── www
-    └── luci-static
-        └── resources
-            └── netping
-                ├── datepicker
-                ├── fonts
-                ├── icons
-                ├── jquery
-                ├── rslider
-                └── utils
-
+│           ├── ui_overrides
+│           ├── ui_utils
+│           └── ui_widgets
+└── root
+    ├── etc
+    │   ├── config
+    │   └── netping_luci_relay
+    │       └── template
+    │           └── default
+    ├── usr
+    │   └── lib
+    │       └── lua
+    │           ├── netping
+    │           └── websocket
+    └── www
+        └── luci-static
+            └── resources
+                └── netping
+                    ├── datepicker
+                    ├── fonts
+                    ├── icons
+                    ├── jquery
+                    ├── rslider
+                    └── utils
 ```
 
-## Инструкция по установке
+## Инструкция по установке ВАРИАНТ №1
+
+1. Взять готовый IPK-файл и установить командой:
+2. Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
+3. Скопировать на устройство и установить командой:
+opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
+
+## Инструкция по установке ВАРИАНТ №2
 
 1. Скопировать файлы из папки **/luasrc** в соответствующие подпапки устройства **/usr/lib/lua/luci**
-2. Скопировать файлы из /www в соответствующие подпапки устройства **/www**
-3. Скопировать файлы из /root/etc в соответствующие подпапки устройства **/etc**
-4. Установить пакет luci_compat при помощи следующих команд:
+2. Скопировать файлы из /root в соответствующие подпапки устройства
+3. Установить дополнительные пакеты при помощи следующих команд:
 * opkg update
 * opkg install luci-compat lua-ev luasocket luabitop
-
 
 ## Инструкция по тестирование Websocket
 

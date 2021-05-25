@@ -1,0 +1,17 @@
+# SHELL := /bin/bash
+
+VM ?= openwrt.vm
+DST ?= /root/netping_luci_relay/
+
+install:
+	@echo "== Install netping_luci_relay"
+	@cp -fR root/etc/* /etc/
+	@cp -fR root/usr/* /usr/
+	@cp -fR root/www/* /www/
+	@cp -fR luasrc/* /usr/lib/lua/luci/
+	@/etc/init.d/uhttpd restart
+
+deploy:
+	@echo "== Deploy project to VM"
+	@rsync -avP . $(VM):$(DST) > /dev/null
+	@ssh $(VM) "cd $(DST) && make install"
