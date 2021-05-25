@@ -47,7 +47,7 @@ OpenWrt LuCI page for relay management.
 
 ## Инструкция по установке ВАРИАНТ №1
 
-1. Взять готовый IPK-файл и установить командой:
+1. Взять готовый IPK-файл со страницы [релизов](https://github.com/Netping/netping_luci_relay/releases)
 2. Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
 3. Скопировать на устройство и установить командой:
 opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
