@@ -139,7 +139,7 @@ function edit_relay(btn) {
 														E('div', {class: 'td', style: "text-align: right;"}, [password.render()])
 													])
 												]),
-												E('div', { class: 'table modal-section-param'}, [
+												E('div', { class: 'table modal-section-param more-params'}, [
 													E('div', {class: 'tr table-titles'}, [
 														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры подключения реле")),
 														E('div', {class: 'th'}, _("Значение")),
@@ -154,10 +154,11 @@ function edit_relay(btn) {
 													])
 												]),
 												E('button', {
-													class: 'cbi-button cbi-button-apply',
-													disabled: 'disabled',
-													style: 'display: initial;'
-												}, _('Скрыть параметры подключения реле') )
+													'class': 'cbi-button cbi-button-apply',
+													'data-action': 'show',
+													'style': 'display: initial;',
+													'click': ui.createHandlerFn(this, 'toggle_more')
+												}, _('Дополнительные параметры') )
 											])
 										])
 									])
