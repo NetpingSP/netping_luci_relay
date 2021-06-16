@@ -35,9 +35,7 @@ function edit_relay(btn) {
 					embedded = relay_data["embedded"] == '1' ? true : false
 
 				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 
-					/* will be uncommented soon */
-					/*disabled: embedded, */
-					disabled: true,
+					disabled: embedded,
 					sort: true });
 
 				var state_on_term = new ui.Textfield(globals("state")["1"], { 
@@ -181,6 +179,7 @@ function edit_relay(btn) {
 									}
 								}
 								if (form_valid) {
+									relay_data["name"] = memo.getValue()
 									relay_data["proto"] = proto.getValue()
 									relay_data["restart_time"] = restart_time.getValue()
 									relay_data["dest_addr"] = dest_addr_port.getValue().split(":")[0]
