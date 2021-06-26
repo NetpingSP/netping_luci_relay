@@ -1,0 +1,23 @@
+
+# BASIC PRIMITIVES
+# ================
+
+config 'template' module
+	option id ''
+	option memo ''
+	option type ''
+
+config 'template' variable
+	option id ''
+	option name ''
+	option title ''
+	option parent ''				# may be: another variable, or modifier, or module ids
+	option oldbrother ''				# defines order of the variable in interface
+
+config 'template' modifier
+	option id ''
+	option name ''
+	option type ''
+	option parent ''				# may be a variable id
+	option oldbrother ''				# may be another modifier id
+	

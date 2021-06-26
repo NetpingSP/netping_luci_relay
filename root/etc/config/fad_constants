@@ -1,0 +1,28 @@
+
+# CONSTANTS
+# =========
+
+config 'constant' modules
+	list type 'adapter'
+	list type 'driver'
+	list type 'functionality'
+
+config 'constant' modifiers
+	list type 'source'
+	list type 'targer'
+	list type 'inputtype'
+	list type 'validator'
+	list type 'parser'
+	list type 'logic'
+	list type 'formual'
+	list type 'publisher'
+	list type 'subscriber'
+	list type 'autorefresh'
+	list type 'scope'
+
+config 'modifier' inputtype
+	list option 'string'
+	list option 'number'
+	list option 'text'
+	list option 'button'
+	list option 'list'

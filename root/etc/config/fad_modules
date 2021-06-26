@@ -1,0 +1,44 @@
+
+# ADAPTERS, DRIVERS, FUNCTIONALITIES, UI WIDGETS
+# ==============================================
+
+config functionality
+	option name 'relay'
+	option title 'Управление реле NetPing'
+	option state_on 'Включено ON'
+	option state_off 'Выключено OFF'
+	list adapter 'http'
+	list adapter 'snmp'					# this list is modified dynamically,
+	list adapter 'gpio'					# according to the 'source' setting below
+
+config source
+	option variable 'functionality.relay.adapter'
+	option get_from 'ubus'
+	option command 'ubus call relay list \'{"type": "adapter"}\''
+
+config visibility
+	list variable 'functionality.relay.state_on'
+	list show_in 'widget.modal.relay_settings'
+	option title 'Значение статуса ВКЛ.'
+	option oldbrother '0'
+
+config visibility
+	list variable 'functionality.relay.state_off'
+	list show_in 'widget.modal.relay_settings'
+	option title 'Значение статуса ВЫКЛ.'
+	option oldbrother 'functionality.relay.state_on'
+
+config visibility
+	list variable 'functionality.relay.adapter'
+	list show_in 'widget.modal.relay_settings'
+	option title 'Протокол'
+	option oldbrother 'functionality.relay.state_off'
+
+config inputtype
+	list variable 'functionality.relay.adapter'
+	option value 'list'
+	
+
+config widget
+	option name 'modal.relay_setting'
+	option title 'Настройка реле'

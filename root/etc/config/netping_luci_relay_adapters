@@ -1,0 +1,143 @@
+
+# RELAY ADAPTER TEMPLATE
+# ======================
+
+config 'relay' template
+	option memo '0'
+	option embedded '0'
+	option state_on '0'
+	option state_off '0'
+	option state '0'
+	option restart_time '0'
+	option status '0'
+	option proto '0'
+
+# RELAY DATA
+# ==========
+
+config relay
+	option id 'relay_1'
+	option title 'Пожарная сигнализация'
+	option embedded '0'
+	option restart_time '120'
+	option state '1'
+	option status '2'
+	option proto 'http_1'
+
+config relay
+	option id 'relay_2'
+	option title 'Серверный шкаф 1'
+	option embedded '0'
+	option restart_time '120'
+	option state '1'
+	option status '2'
+	option proto 'http_2'
+
+config relay
+	option id 'relay_3'
+	option title 'Резервный сервер'
+	option embedded '0'
+	option restart_time '120'
+	option state '1'
+	option status '2'
+	option proto 'snmp_1'
+
+
+# PROTOCOL ADAPTER TEMPLATES
+# ==========================
+
+config 'http' template
+	option address '0.0.0.0'
+	optio port '0'
+	option login '0'
+	option password '0'
+
+config 'snmp' template
+	option address '0'
+	option port '0'
+	optio community '0'
+
+
+# PROTOCOL ADAPTER DATA
+# =====================
+
+config http
+	option id 'http_1'
+	option address '192.168.0.1'
+	optio port '65535'
+	option login 'user'
+	option password 'pass'
+
+config http
+	option id 'http_2'
+	option address '192.168.0.1'
+	optio port '65535'
+	option login 'user'
+	option password 'pass'
+
+config snmp
+	option id 'snmp_1'
+	option address '.0.1.2.3.4.500'
+	option port '61'
+	optio community 'helloworld'	
+
+
+# MODAL-WIDGET - RELAY SETTINGS
+# =============================
+
+config 'modal_relay_setting.relay.memo' modifiers
+	option source 'user'
+	option inputtype 'string'
+	option validate 'string.ne'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother '0'
+	option label 'Памятка'
+
+config 'modal_relay_setting.relay.embedded' modifiers
+	option source 'config'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.memo'
+	option label 'Встроенное'
+
+config 'modal_relay_setting.relay.state_on' modifiers
+	option source 'user'
+	option inputtype 'string'
+	option validate 'string.ne'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.embedded'
+	option label 'Имя состояния ВКЛ.'
+
+config 'modal_relay_setting.relay.state_off' modifiers
+	option source 'user'
+	option inputtype 'string'
+	option validate 'string.ne'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.state_on'
+	option label 'Имя состояния ВЫКЛ.'
+
+config 'modal_relay_setting.relay.proto' modifiers
+	option source 'ubus'
+	option source_command 'ubus call relay list \'{"type": "protocol"}\''
+	option inputtype 'list'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.state_off'
+	option label 'Протокол'
+
+config 'modal_relay_setting.relay.restart_time' modifiers
+	option source 'user'
+	option inputtype 'number'
+	option validate 'number.ne'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.proto'
+	option label 'Протокол'
+
+# MODAL-WIDGET - PROTOCOL SETTINGS
+# ================================
+
+config 'modal_relay_setting.relay.proto.http.address' modifiers
+	option source 'user'
+	option inputtype 'string'
+	option validate 'ip_colon_port.ne'
+	list visibility 'widget.modal.relay_settings'
+	option oldbrother 'relay.proto'
+	option label 'Адрес и порт '

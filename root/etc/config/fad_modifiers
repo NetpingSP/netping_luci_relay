@@ -1,0 +1,53 @@
+
+# MODIFIERS AND ITS VARIABLES
+# ===========================
+
+config modifier
+	option id '8'
+	option parent '7'
+	option type 'source'
+	option value 'adapter'
+
+config modifier
+	option id '8'
+	option parent '7'
+	option type 'inputtype'
+	option value 'list'
+
+config variable
+	option id '9'
+	option parent '8'
+	option oldbrother ''
+	option name 'protocol'
+	option title 'Протокол'
+	list value 'HTTP'
+	list value 'SNMP'
+	list value 'GPIO'
+
+config modifier
+	option id '10'
+	option type 'validator'
+	option parent '2'
+
+
+config variable
+	option id '3'
+	option parent '6'
+	option oldbrother ''
+	option name 'datatype'
+	option title 'Укажите тип ввода'
+	option value 'list'
+
+
+
+
+# LIST OF PROTOCOLS
+
+config modifier
+	option id '6'
+	option type 'inputtype'
+	option parent '2'
+
+config variable
+	option id ''
+

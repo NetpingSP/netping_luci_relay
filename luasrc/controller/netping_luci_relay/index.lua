@@ -1,6 +1,7 @@
 module("luci.controller.netping_luci_relay.index", package.seeall)
 
 local config = "netping_luci_relay"
+local fad = require "luci.fad.main"
 local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
@@ -22,10 +23,15 @@ end
 
 
 function do_relay_action(action, relay_id)
+
 	local payload = {}
 	payload["relay_data"] = luci.jsonc.parse(luci.http.formvalue("relay_data"))
 	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do payload["relay_data"][k] = nil end
 	payload["globals_data"] = luci.jsonc.parse(luci.http.formvalue("globals_data"))
+
+	-- type "logread for debug this:"
+	-- if type(payload) == "table" then util.dumptable(payload) else util.perror(payload) end
+
 	local commands = {
 		add = function(...)
 			local prototype = uci:get_all(config, "relay_prototype")

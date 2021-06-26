@@ -1,0 +1,34 @@
+
+# CONSTANTS
+# =========
+
+config 'variable' properties
+	list type 'source'
+	list type 'inputtype'
+	list type 'validator'
+	list type 'autorefresh'
+
+
+config 'property' source
+	list option 'user'
+	list option 'config'
+	list option 'ubus'
+
+config 'property' inputtype
+	list option 'string'
+	list option 'number'
+	list option 'text'
+	list option 'button'
+	list option 'list'
+
+config 'property' validator
+	list option 'string.ne'
+	list option 'number.ne'
+	list option 'hostport.ne'
+	list option 'snmp_address.ne'
+	list option 'snmp_port.ne'
+	list option 'snmp_community.ne'
+	list option 'alphanumeric.ne'
+
+config 'property' autorefresh
+	option interval '3'
