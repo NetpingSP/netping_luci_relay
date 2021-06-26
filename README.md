@@ -58,16 +58,17 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 2. Скопировать файлы из /root в соответствующие подпапки устройства
 3. Установить дополнительные пакеты при помощи следующих команд:
 * opkg update
-* opkg install luci-compat lua-ev luasocket luabitop
+* (v.0.0.1): opkg install luci-compat lua-ev luasocket luabitop
+* (v.0.0.2): opkg install luci-compat
 
-## Инструкция по тестирование Websocket
+## Инструкция по тестированию Websocket (только для версии 0.0.1)
 
 Вебсокет настроен на порт 8082. Чтобы отредактировать порт отредактируйте файлы:
 * /usr/lib/lua/luci/netping/websocket_relay.lua
 * /usr/lib/lua/luci/view/netping_luci_relay/relay_websocket.js.htm
 
-![me](https://github.com/Netping/netping_luci_relay/blob/v5/wsport_lua.png)
-![me](https://github.com/Netping/netping_luci_relay/blob/v5/wsport_js.png)
+![me](https://github.com/Netping/netping_luci_relay/blob/v5/control/v.0.0.1/wsport_lua.png)
+![me](https://github.com/Netping/netping_luci_relay/blob/v5/control/v.0.0.1/wsport_js.png)
 
 1. git clone https://github.com/Netping/netping_luci_relay.git
 2. cd ./netping_luci_relay
@@ -80,9 +81,14 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
 [Screencast](https://www.youtube.com/watch?v=FQKr_YZB6S0)
 
+## Инструкция по тестированию (только для версии 0.0.2)
+
+[Screencast v.0.0.2](https://youtu.be/IH48thITyRk)
+
 ## ToDo
 
 1. DONE: ~~Если пользователь переключает Weekly, Monthly, Yearly не выбрав предварительно ни одной даты, то установить сегодняшнюю дату.~~
 2. DONE: ~~Сделать "плавающую" ширину виджета Slider, т.к. при уменьшении экрана (уже при 1000 px) элементы наезжают друг на друга.~~
 3. XHR() is deprecated. Use L.request instead. See TODO in /usr/lib/lua/luci/view/netping_luci_relay/relay.js.htm
-4. Websocket - finalize code
+4. ~~Websocket - finalize code (NOT DONE AS IT'S ONLY ACTUAL FOR OLD VERSION: 0.0.1)~~
+5. JSON-RPC requests for UBUS
