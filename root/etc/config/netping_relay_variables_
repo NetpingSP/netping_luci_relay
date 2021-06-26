@@ -1,0 +1,29 @@
+
+# RELAY ADAPTER VARIABLE MODIFIERS FOR DIFFERENT WIDGETS (MODAL OR TABLE)
+# =======================================================================
+# - is for modal
+# 'widget.table.relay_list' - is for table
+# ----------------------------------------
+
+config modifier
+	option variable 'relay.memo'
+	option visibility 'widget.modal.setting.relay'
+	option source 'user'
+	option inputtype 'string'
+	option validator 'string.ne'
+	option oldbrother '0'
+	option label 'Введите имя реле (памятка)'
+
+config modifier
+	option variable 'relay.memo'
+	option visibility 'widget.table.list.relay'
+	option source 'config'
+	option label 'Памятка'
+	option oldbrother '0'
+
+config 'modifier
+	option variable 'embedded'
+	option visibility 'widget.modal.setting.relay'
+	option source 'config'
+	option oldbrother 'memo'
+	option label 'Встроенное'

@@ -22,15 +22,8 @@ function InputType:new(type)
 	end
 
 
-
-
-
-
 	setmetatable(obj, self)
 	self.__index = self; return obj;
 end
 
-local t = InputType:new('string')
 
-util.perror("INPUTTYPE:")
-util.perror(t:render("string"))

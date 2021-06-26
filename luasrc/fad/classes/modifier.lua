@@ -7,6 +7,7 @@ Modifier proto class
 local util = require "luci.util"
 
 local Modifier = {}
+Modifier.config = 'netping_relay_variables'
 function Modifier:new()
 	local obj = {}
 	obj.variable = ''

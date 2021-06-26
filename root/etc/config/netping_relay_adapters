@@ -2,7 +2,8 @@
 # RELAY ADAPTER TEMPLATE
 # ======================
 
-config 'relay' template
+config template 'relay'
+	option id 'relay[0]'
 	option memo '0'
 	option embedded '0'
 	option state_on '0'
@@ -16,67 +17,69 @@ config 'relay' template
 # ==========
 
 config relay
-	option id 'relay_1'
-	option title 'Пожарная сигнализация'
+	option id 'relay[1]'
+	option memo 'Пожарная сигнализация'
 	option embedded '0'
 	option restart_time '120'
 	option state '1'
 	option status '2'
-	option proto 'http_1'
+	option proto 'http[1]'
 
 config relay
-	option id 'relay_2'
-	option title 'Серверный шкаф 1'
+	option id 'relay[2]'
+	option memo 'Серверный шкаф 1'
 	option embedded '0'
 	option restart_time '120'
 	option state '1'
 	option status '2'
-	option proto 'http_2'
+	option proto 'http[2]'
 
 config relay
-	option id 'relay_3'
-	option title 'Резервный сервер'
+	option id 'relay[3]'
+	option memo 'Резервный сервер'
 	option embedded '0'
 	option restart_time '120'
 	option state '1'
 	option status '2'
-	option proto 'snmp_1'
+	option proto 'snmp[1]'
 
 
 # PROTOCOL ADAPTER TEMPLATES
 # ==========================
 
-config 'http' template
+config template 'http'
+	option id 'http[0]'
 	option address '0.0.0.0'
-	optio port '0'
+	option port '0'
 	option login '0'
 	option password '0'
 
-config 'snmp' template
+config template 'snmp'
+	option id 'snmp[0]'
 	option address '0'
 	option port '0'
-	optio community '0'
+	option community '0'
 
 
 # PROTOCOL DATA
 # =============
 
 config http
-	option id 'http_1'
+	option id 'http[1]'
 	option address '192.168.0.1'
-	optio port '65535'
+	option port '65535'
 	option login 'user'
 	option password 'pass'
 
 config http
-	option id 'http_2'
+	option id 'http[2]'
 	option address '192.168.0.1'
-	optio port '65535'
+	option port '65535'
 	option login 'user'
 	option password 'pass'
 
 config snmp
-	option id 'snmp_1'
+	option id 'snmp[1]'
 	option address '.0.1.2.3.4.500'
 	option port '61'
-	optio community 'helloworld'	
+	option community 'helloworld'	
