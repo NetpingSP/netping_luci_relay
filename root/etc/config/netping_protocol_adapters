@@ -1,0 +1,45 @@
+
+# PROTOCOL ADAPTER TEMPLATES
+# ==========================
+
+config template
+	option address '0.0.0.0'
+	option port '0'
+	option login '0'
+	option password '0'
+	option _type 'http'
+	option _id 'http[0]'
+
+config template
+	option address '0'
+	option port '0'
+	option community '0'
+	option _type 'snmp'
+	option _id 'snmp[0]'
+
+
+# PROTOCOL DATA
+# =============
+
+config adapter
+	option address '192.168.0.1'
+	option port '65535'
+	option login 'user'
+	option password 'pass'
+	option _type 'http'
+	option _id 'http[1]'
+
+config adapter
+	option address '192.168.0.1'
+	option port '65535'
+	option login 'user'
+	option password 'pass'
+	option _type 'http'
+	option _id 'http[2]'
+
+config adapter
+	option address '.0.1.2.3.4.500'
+	option port '61'
+	option community 'helloworld'	
+	option _type 'snmp'
+	option _id 'snmp[1]'

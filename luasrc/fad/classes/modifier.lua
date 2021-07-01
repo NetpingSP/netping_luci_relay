@@ -1,8 +1,6 @@
 --[[
-Modifier proto class
+Modifier base class
 ]]
--- local util = require "../../util.lua"
--- module("Modifier", package.seeall)
 
 local util = require "luci.util"
 

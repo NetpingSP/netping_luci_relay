@@ -5,9 +5,12 @@
 # 'widget.table.list.relay' - is for table
 # ----------------------------------------
 
+# MODAL WIDGET
+# ============
+
 config modifier
 	option target 'relay[].memo'
-	option visibility 'widget.modal.setting.relay'
+	option showin 'widget.modal.setting.relay'
 	option source 'user'
 	option inputtype 'string'
 	option validator 'string.ne'
@@ -15,22 +18,15 @@ config modifier
 	option label 'Введите имя реле (памятка)'
 
 config modifier
-	option target 'relay[].memo'
-	option visibility 'widget.table.list.relay'
-	option source 'config'
-	option label 'Памятка'
-	option oldbrother '0'
-
-config modifier
 	option target 'relay[].embedded'
-	option visibility 'widget.modal.setting.relay'
+	option showin 'widget.modal.setting.relay'
 	option source 'config'
 	option oldbrother 'relay[].memo'
 	option label 'Встроенное'
 
 config modifier
 	option target 'relay[].state_on'
-	option visibility 'widget.modal.setting.relay'
+	option showin 'widget.modal.setting.relay'
 	option source 'user'
 	option inputtype 'string'
 	option validator 'string.ne'
@@ -39,7 +35,7 @@ config modifier
 
 config modifier
 	option target 'relay[].state_off'
-	option visibility 'widget.modal.setting.relay'
+	option showin 'widget.modal.setting.relay'
 	option source 'user'
 	option inputtype 'string'
 	option validator 'string.ne'
@@ -48,28 +44,52 @@ config modifier
 
 config modifier
 	option target 'relay[].proto'
-	option visibility 'widget.modal.setting.relay'
-	option source 'ubus'
-	option source_command 'ubus call relay list {"type": "protocol"}'
+	option showin 'widget.modal.setting.relay'
+	option source 'config'
 	option inputtype 'list'
 	option oldbrother 'relay[].state_off'
 	option label 'Выберите протокол'
 
 config modifier
-	option target 'relay[].proto'
-	option visibility 'widget.table.list.relay'
-	option source 'config'
-	option oldbrother 'relay[].status'
-	option label 'Протокол'
-
-config modifier
 	option target 'relay[].restart_time'
-	option visibility 'widget.modal.setting.relay'
+	option showin 'widget.modal.setting.relay'
 	option source 'user'
 	option inputtype 'number'
 	option validator 'number.ne'
 	option oldbrother 'relay[].proto'
 	option label 'Время перезапуска'
+
+# TABLE WIDGET 
+# ============
+
+config modifier
+	option target 'relay[].memo'
+	option showin 'widget.table.list.relay'
+	option source 'config'
+	option label 'Памятка'
+	option oldbrother '0'
+
+config modifier
+	option target 'relay[].embedded'
+	option showin 'widget.table.list.relay'
+	option source 'config'
+	option oldbrother 'relay[].memo'
+	option label 'Тип'
+
+config modifier
+	option target 'relay[].state'
+	option showin 'widget.table.list.relay'
+	option source 'config'
+	option formula 'CustomState()'
+	option oldbrother 'relay[].embedded'
+	option label 'Состояние'
+
+config modifier
+	option target 'relay[].status'
+	option showin 'widget.table.list.relay'
+	option source 'config'
+	option oldbrother 'relay[].state'
+	option label 'Статус'
 
 
 # PROTOCOL ADAPTER VARIABLE MODIFIERS

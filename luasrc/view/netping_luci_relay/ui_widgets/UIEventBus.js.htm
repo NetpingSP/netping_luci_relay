@@ -163,6 +163,9 @@ L.require('ui').then(function(ui) {
 				}
 			});
 			ui["EventBus"] = UIEventBus;
+
+			window.EventBus = new ui.EventBus()
+			var EventBus_widget = window.EventBus.render()
 		});
 	});
 });

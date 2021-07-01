@@ -1,13 +1,10 @@
 module("luci.controller.netping_luci_relay.index", package.seeall)
 
-local config = "netping_relay_adapters"
+local config = "netping_luci_relay"
 local fad = require "luci.fad.main"
 local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
-local log = require "luci.fad.utils.log"
-
-local Relay = require 'luci.fad.classes.relay'
 
 
 
@@ -67,14 +64,10 @@ function do_relay_action(action, relay_id)
 			end
 		end,
 		switch = function(relay_id, ...)
-			local r = Relay:load(relay_id)
-			log("RRR", r)			
-			--[[local old_state = tonumber(uci:get(config, relay_id, "state"))
+			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
-log("SWITCH", old_state)
 			uci:set(config, relay_id, "state", new_state)
 			uci:commit(config)
-			]]
 		end,
 		edit = function(relay_id, payloads)
 			-- apply settings.<relay_id>
