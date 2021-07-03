@@ -1,0 +1,8 @@
+
+config template 'http'
+	option relay '0'
+	option address '0.0.0.0'
+	option port '0'
+	option login '0'
+	option password '0'
+

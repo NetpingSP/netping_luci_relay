@@ -6,7 +6,7 @@ local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 local log = require "luci.model.netping.log"
 
-local relay = require "luci.model.netping.relay"
+local relay = require "luci.model.netping.relay.main"
 
 
 function notify_backend(action, relay_id, payload)

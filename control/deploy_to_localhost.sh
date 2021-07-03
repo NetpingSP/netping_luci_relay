@@ -1,0 +1,6 @@
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /usr/lib/lua/luci/model/netping/ /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/luasrc/model/netping/
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /usr/lib/lua/luci/model/cbi/netping_luci_relay/ /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/luasrc/model/cbi/netping_luci_relay/
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /usr/lib/lua/luci/controller/netping_luci_relay/ /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/luasrc/controller/netping_luci_relay
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /usr/lib/lua/luci/view/netping_luci_relay/ /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/luasrc/view/netping_luci_relay
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /etc/config/netping_luci_relay* /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/root/etc/config/
+sshpass -p 'anton' rsync -avzzhe "ssh 192.168.0.9 -p 22" --progress --recursive /www/luci-static/resources/netping/ /home/anton/lua_projects/DKSF708/0.0.3/netping_luci_relay/root/www/luci-static/resources/netping/
