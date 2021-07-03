@@ -134,6 +134,19 @@ L.require('ui').then(function(ui) {
 					this.node.dispatchEvent(new CustomEvent("bus-add-tab", {}));
 				},
 
+				grammaValidator: function(gramma, errormsg) {
+					return function(user_input_text) {
+						const parser = new nearley.Parser(nearley.Grammar.fromCompiled(gramma));
+						try {
+							parser.feed(user_input_text)
+							return true
+						}
+						catch (e) {
+							return errormsg
+						}
+					}
+				}
+
 				register: function(source, eventName, sourceEvents=[], callback) {
 					this.registerEvents(source, eventName, sourceEvents)
 					this.node.addEventListener(eventName, L.bind(function(ev) { 

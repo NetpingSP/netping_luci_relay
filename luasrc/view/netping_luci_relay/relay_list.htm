@@ -7,12 +7,12 @@
 <%+netping_luci_relay/modal_relay%>
 
 <%
+	local relayM = require "luci.model.netping.relay"
+
 	local config = "netping_luci_relay"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
 	
-	--local relays = uci:get_all(config)
-	--util.dumptable(relays)
 
 	-- make relays table for html rendering
 	local relays = {}
@@ -23,23 +23,6 @@
 	end
 	uci:foreach(config, "relay", withEveryRelay)
 
-	local globals = uci:get_all(config, "globals")
-
-	-- Prepare state label, customized with globals setting
-	local state_label = {}
-	for _, s in pairs(globals["state"]) do
-		for k, v in s.gmatch(s, "(%d+)\.(.*)") do
-			state_label[k] = v
-		end	
-	end
-
-	-- Prepare status label
-	local status_label = {}
-	for _, s in pairs(globals["status"]) do
-		for k, v in s.gmatch(s, "(%d+)\.(.*)") do
-			status_label[k] = v
-		end	
-	end
 
 	-- remove from iterating non-relay types
 	relays["globals"] = nil
@@ -67,19 +50,19 @@
 					<input type="text"
 					onchange="rename_relay(this)"
 					name="relay_name"
-					value="<%=v.name%>"
+					value="<%= relayM(k):render('name') %>"
 					data-relay="<%=k%>"/>
 					<script type="text/javascript">L.require('menu-bootstrap')</script>
 					<div id="<%=k%>" class="cbi-tooltip error" style="display: none;">▲ Такая памятка уже есть!</div>
 				</div>
 				<div class="td" data-title="Тип">
-					<% if v.embedded == "1" then write("Локально") else write("Удалённо") end %>
+					<%= relayM(k):render("embedded") %>
 				</div>
 				<div class="td <%=k%> state" data-title="Состояние" data-relay="<%=k%>">
-					<%=state_label[v.state]%>
+					<%= relayM(k):render("state") %>
 				</div>
 				<div class="td" data-title="Статус">
-					<%=status_label[v.status]%>
+					<%= relayM(k):render("status") %>
 				</div>
 				<div class="nowrap cbi-section-actions td">
 					<input type="button" class="cbi-button cbi-button-apply" onclick="switch_relay(this)"
@@ -110,7 +93,7 @@
 						data-relay="<%=k%>" 
 						style="display: initial;" />
 
-					<% if v.embedded == "0" then %>
+						<% if relayM(k):get("embedded") == '0' then %>
 					<input type="button" class="cbi-button cbi-button-reset" onclick="delete_relay(this)"
 						value="Удалить"
 						data-relay="<%=k%>"

@@ -4,6 +4,9 @@ local config = "netping_luci_relay"
 local http = require "luci.http"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
+local log = require "luci.model.netping.log"
+
+local relay = require "luci.model.netping.relay"
 
 
 function notify_backend(action, relay_id, payload)
@@ -33,38 +36,21 @@ function do_relay_action(action, relay_id)
 
 	local commands = {
 		add = function(...)
-			local prototype = uci:get_all(config, "relay_prototype")
-			local globals = uci:get_all(config, "globals")
-			local count = 0
-			uci:foreach(config, "relay", function() count = count + 1 end)
-			prototype["name"] = globals["default_name"] .. " " .. count
-			prototype["dest_port"] = globals["default_port"]
-			prototype["restart_time"] = globals["restart_time"]
-			for _, k in pairs({".name", ".anonymous", ".type"}) do prototype[k] = nil end
-
-			uci:section(config, "relay", nil, prototype)
-			uci:commit(config)
+			relay():new()
 		end,
 		rename = function(relay_id, payload)
 			util.perror(payload["relay_data"]["name"])
 			if payload["relay_data"]["name"] then
-				uci:set(config, relay_id, "name", payload["relay_data"]["name"])
-				uci:commit(config)
+				relay(relay_id):set("name", payload["relay_data"]["name"])
 			end
 		end,
 		delete = function(relay_id, ...)
-			-- protect embedded relays from deleting
-			local embedded = uci:get(config, relay_id, "embedded") == "1"
-			if not embedded then
-				uci:delete(config, relay_id)
-				uci:commit(config)
-			end
+			relay(relay_id):delete()
 		end,
 		switch = function(relay_id, ...)
 			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
-			uci:set(config, relay_id, "state", new_state)
-			uci:commit(config)
+			relay(relay_id):set("state", new_state)
 		end,
 		edit = function(relay_id, payloads)
 			-- apply settings.<relay_id>
