@@ -133,7 +133,13 @@ L.require('ui').then(function(ui) {
 					ui.tabs.renderTab(tab_title)
 					this.node.dispatchEvent(new CustomEvent("bus-add-tab", {}));
 				},
-
+/*
+				changeProto: function(ptoto) {
+					this.node.dispatchEvent(new CustomEvent("bus-proto-changed", {
+						details: proto
+					}));
+				},
+*/
 				register: function(source, eventName, sourceEvents=[], callback) {
 					this.registerEvents(source, eventName, sourceEvents)
 					this.node.addEventListener(eventName, L.bind(function(ev) { 
@@ -163,6 +169,8 @@ L.require('ui').then(function(ui) {
 				}
 			});
 			ui["EventBus"] = UIEventBus;
+			window.EventBus = new ui.EventBus()
+			var EventBus_pseudo_widget = window.EventBus.render()
 		});
 	});
 });

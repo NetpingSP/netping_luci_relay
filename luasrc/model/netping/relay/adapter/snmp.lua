@@ -1,3 +1,4 @@
+local fs = require "nixio.fs"
 local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 local log = require "luci.model.netping.log"
@@ -47,6 +48,25 @@ function snmp:render(optname)
 			return snmp:get("host") .. ":" .. snmp:get("port")
 		end,
 
+		cssfile = function()
+			local path = util.libpath() .. '/view/netping_luci_relay/ui_adapter/snmp.css.htm'
+			return fs.readfile(path)
+		end,
+
+		jsinit = function()
+			return "var adapter_snmp = new ui.AdapterSNMP(relay_id)"
+		end,
+
+		jsrender = function()
+			return "adapter_snmp.render()"
+		end,
+
+		widgetfile = function()
+			local path = util.libpath() .. '/view/netping_luci_relay/ui_adapter/UIAdapterSNMP.js.htm'
+			return fs.readfile(path)
+		end,
+
+
 		-- All trivial options are rendered as is.
 		-----------------------------------------
 		default = function(optname)
@@ -67,6 +87,13 @@ local metatable = {
 						table.loaded = r
 						return
 					end
+				end
+			end)
+		else -- loads protocol template data if 'id' is absent
+			uci:foreach(adapter_config, adapter_type, function(r)
+				if (r[".name"] == "template") then
+					table.loaded = r
+					return
 				end
 			end)
 		end

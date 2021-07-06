@@ -65,8 +65,9 @@ function edit_alert(btn) {
 				L.require("uci").then(function(uci) {
 					uci.load("<%=config%>").then(function(out){
 
-						window.EventBus = new ui.EventBus()
-						var EventBus_widget = window.EventBus.render()
+						// Commented on 05.07.2021, as this code was put into UIEventBus.js.htm
+						//window.EventBus = new ui.EventBus()
+						//var EventBus_widget = window.EventBus.render()
 
 						var active = new ui.Checkbox(theAlert["enabled"]);
 

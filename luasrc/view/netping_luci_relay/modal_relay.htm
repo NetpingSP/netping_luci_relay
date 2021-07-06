@@ -2,9 +2,22 @@
 	local config = "netping_luci_relay"
 	local uci = require "luci.model.uci".cursor()
 	local util = require "luci.util"
+	local log = require "luci.model.netping.log"
 	local globals = uci:get_all(config, "globals")
 	--util.dumptable(globals)
+
 %>
+<%
+	local adapter_list = require "luci.model.netping.relay.adapter_list"
+	for adptype, adapter in pairs(adapter_list) do
+		print(adapter():render("cssfile"))
+		print(adapter():render("widgetfile"))
+	end
+	log("TBL", '["' .. table.concat(util.keys(adapter_list), '", "') .. '"]')
+%>
+<%+netping_luci_relay/ui_widget/UIAdapterEmpty.js%>
+<%+netping_luci_relay/ui_override/DropdownProto.js%>
+
 <script type="text/javascript">
 //<![CDATA[
 
@@ -34,9 +47,17 @@ function edit_relay(btn) {
 					relay_data = uci.get("<%=config%>", relay_id),
 					embedded = relay_data["embedded"] == '1' ? true : false
 
-				var proto = new ui.Dropdown(relay_data["proto"], globals("proto"), { 
+
+				// TODO 
+				// get list of proto in form of JS object:
+				// { http: "HTTP", snmp: "SNMP" }
+				var proto = new ui.DropdownProto(relay_data["proto"], <% print(string.upper('["' .. table.concat(util.keys(adapter_list), '", "') .. '"]')) %>, { 
 					disabled: embedded,
-					sort: true });
+					sort: true
+				});
+
+
+
 
 				var state_on_term = new ui.Textfield(globals("state")["1"], { 
 					optional: false,
@@ -54,40 +75,20 @@ function edit_relay(btn) {
 				}
 				var relay_number = new ui.Dropdown(relay_data["number"], rnums, { disabled: embedded, sort: false });
 
-				var dest_addr = new ui.Textfield(relay_data["dest_addr"], { 
-					maxlength: 128, 
-					disabled: embedded,
-					datatype: "host" });
 
-				var dest_addr_port = new ui.Textfield(relay_data["dest_addr"] + ":" + relay_data["dest_port"], { 
-						maxlength: 128, 
-						disabled: embedded,
-						datatype: "hostport"
-					});
+				// ADAPTER INITS
+				<%
+					for adptype, adapter in pairs(adapter_list) do
+						print(adapter():render("jsinit"))
+					end
+				%>
+				var empty_adapter = new ui.AdapterEmpty()
 
-
-
-				var dest_port = new ui.Textfield(relay_data["dest_port"], { 
-					disabled: embedded,
-					datatype: "port" });
 
 				var restart_time = new ui.TextFieldStyled(relay_data["restart_time"], { 
 						maxlength: 3, 
 						datatype: "uinteger",
 						htmlStyle: "width: 70px"	
-					});
-
-				var login = new ui.TextFieldStyled(relay_data["login"], { 
-					disabled: embedded, 
-					datatype: "rangelength(3,8)",
-					htmlStyle: "width: 150px"
-				});
-
-				var password = new ui.TextFieldStyled(relay_data["password"], { 
-						disabled: embedded, 
-						password: true,
-						datatype: "rangelength(4,16)",
-						htmlStyle: "width: 96px"
 					});
 
 				var memo = new ui.Textfield(relay_data["name"], {
@@ -117,26 +118,18 @@ function edit_relay(btn) {
 									E('label', { 'class': 'cbi-value-title' }, _('Протокол') + ":"),
 									E('div', { class: 'cbi-value-field' }, [
 										E('div', { class: 'cbi-value-field-flex'}, [
-											E('div', { class: 'cbi-value-field-1col'}, [proto.render()]),
+											E('div', { class: 'cbi-value-field-1col'}, [
+												proto.render()
+												
+											]),
 											E('div', { class: 'cbi-value-field-2col'}, [
-												E('div', { class: 'table modal-section-param'}, [
-													E('div', {class: 'tr table-titles'}, [
-														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола")),
-														E('div', {class: 'th'}, _("Значение")),
-													]),
-													E('div', {class: 'tr cbi-rowstyle-1'}, [
-														E('div', {class: 'td'}, "Адрес/порт удалённого реле"),
-														E('div', {class: 'td', style: "text-align: right;"}, [dest_addr_port.render()])
-													]),
-													E('div', {class: 'tr cbi-rowstyle-2'}, [
-														E('div', {class: 'td'}, "Логин"),
-														E('div', {class: 'td', style: "text-align: right;"}, [login.render()])
-													]),
-													E('div', {class: 'tr cbi-rowstyle-1'}, [
-														E('div', {class: 'td'}, "Пароль"),
-														E('div', {class: 'td', style: "text-align: right;"}, [password.render()])
-													])
-												]),
+												empty_adapter.render(),
+												// ADAPTER WIDGETS RENDER
+												<%
+													for atype, adapter in pairs(adapter_list) do
+														print(adapter(atype):render("jsrender") .. ",\n")
+													end
+												%>
 												E('div', { class: 'table modal-section-param more-params'}, [
 													E('div', {class: 'tr table-titles'}, [
 														E('div', {class: 'th', style: 'width: 100%'}, _("Параметры подключения реле")),
@@ -203,6 +196,7 @@ function edit_relay(btn) {
 		})
 	})
 }
+
 function handleEdit(relay_id, relay_data, globals_data) {
 	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
 }
