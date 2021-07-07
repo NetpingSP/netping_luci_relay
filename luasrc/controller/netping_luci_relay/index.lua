@@ -6,6 +6,8 @@ local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 local log = require "luci.model.netping.log"
 
+local socket = require 'socket'
+
 local relay = require "luci.model.netping.relay.main"
 
 
@@ -42,6 +44,7 @@ function do_relay_action(action, relay_id)
 			util.perror(payload["relay_data"]["name"])
 			if payload["relay_data"]["name"] then
 				relay(relay_id):set("name", payload["relay_data"]["name"])
+				socket.sleep(0.02)
 			end
 		end,
 		delete = function(relay_id, ...)
@@ -51,15 +54,15 @@ function do_relay_action(action, relay_id)
 			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
 			relay(relay_id):set("state", new_state)
+			socket.sleep(0.02)
 		end,
 		edit = function(relay_id, payloads)
-			-- apply settings.<relay_id>
 			local allowed_relay_options = util.keys(uci:get_all(config, "relay_prototype"))
 			for key, value in pairs(payloads["relay_data"]) do
 				if util.contains(allowed_relay_options, key) then
 					uci:set(config, relay_id, key, value)
+					socket.sleep(0.02)
 				end
-				uci:commit(config)
 			end
 			-- apply settings.globals
 			local allowed_global_options = util.keys(uci:get_all(config, "globals"))
@@ -70,11 +73,18 @@ function do_relay_action(action, relay_id)
 					else
 						uci:set(config, "globals", key, value)
 					end
+					socket.sleep(0.02)
 				end
-				uci:commit(config)
 			end
 		end,
 		default = function(...)
+			local sucsess = false
+
+			sucsess = uci:save(config)
+			success = uci:commit(config)
+			socket.sleep(0.7)
+			success = success or log("uci:commit() error", payload)
+
 			http.prepare_content("text/plain")
 			http.write("0")
 		end

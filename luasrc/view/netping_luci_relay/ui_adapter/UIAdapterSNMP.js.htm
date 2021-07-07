@@ -96,7 +96,9 @@ L.require('ui').then(function(ui) {
 									container.classList.remove("active")
 									self.isActive = false
 									// remove changes user made
-									uci.unload(self.config)
+									//uci.unload(self.config) // not good idea
+									// TODO
+									// you should create local cache object in JS to keep and clear temporary values
 								}
 							}
 						);
@@ -165,19 +167,21 @@ L.require('ui').then(function(ui) {
 							var saved = new Promise(function(res, rej){
 								if(self.needsToSave) {
 									uci.save().then(L.bind(function(s){
-										res()
+										setTimeout(() => {
+											console.log("SNMP SAVED")
+											uci.apply().then(L.bind(function() {
+												setTimeout(() => {
+													console.log("SNMP APPLIED")
+													self.needsToSave = false
+											    	res()
+												}, 200);
+												return
+											}))
+										}, 200);
 									}))
-								} else rej()
+								} else res()
 							});
-							var applied = new Promise(function(res, rej){
-								if(self.needsToSave) {
-									uci.apply().then(L.bind(function() {
-										self.needsToSave = false
-										res()
-									}))
-								} else rej()
-							});	
-							return Promise.all([saved, applied])
+							return saved
 						} else {
 							return Promise.all([])
 						}

@@ -9,11 +9,15 @@
 %>
 <%
 	local adapter_list = require "luci.model.netping.relay.adapter_list"
+	local dropdown, dropdown_js = {}, ''
 	for adptype, adapter in pairs(adapter_list) do
 		print(adapter():render("cssfile"))
 		print(adapter():render("widgetfile"))
+		dropdown[#dropdown+1] = string.format('"%s": "%s"', adptype:upper(), adptype:upper())
 	end
-	log("TBL", '["' .. table.concat(util.keys(adapter_list), '", "') .. '"]')
+	dropdown_js = "{" .. table.concat(dropdown, ", ") .. "}"
+
+	
 %>
 <%+netping_luci_relay/ui_widget/UIAdapterEmpty.js%>
 <%+netping_luci_relay/ui_override/DropdownProto.js%>
@@ -47,25 +51,10 @@ function edit_relay(btn) {
 					relay_data = uci.get("<%=config%>", relay_id),
 					embedded = relay_data["embedded"] == '1' ? true : false
 
-
-				// TODO 
-				// get list of proto in form of JS object:
-				// { http: "HTTP", snmp: "SNMP" }
-				console.log("NEW", relay_data["proto"])
-
-				var proto = new ui.DropdownProto(relay_data["proto"], {SNMP: "SNMP", HTTP: "HTTP"}, { 
+				var proto = new ui.DropdownProto(relay_data["proto"], <%= dropdown_js %>, { 
 					disabled: embedded,
 					sort: true
 				});
-				/*
-				var proto = new ui.DropdownProto(relay_data["proto"], <% print(string.upper('["' .. table.concat(util.keys(adapter_list), '", "') .. '"]')) %>, { 
-					disabled: embedded,
-					sort: true
-				});
-				*/
-
-
-
 
 				var state_on_term = new ui.Textfield(globals("state")["1"], { 
 					optional: false,
@@ -168,48 +157,39 @@ function edit_relay(btn) {
 					E('div', { class: 'cbi-value-field' }, [
 						E('div', { 
 							class: 'btn', 
-							click: function() {
-								// ADAPTER WIDGETS RENDER
-								<%
-									--for atype, adapter in pairs(adapter_list) do
-									--	print(adapter(atype):render("unset") .. "\n")
-									--end
-								%>
-								L.hideModal()
-							}
+							click: function() { L.hideModal() }
 						}, _('Закрыть')),
 						' ',
 						E('div', { class: 'btn success', "name": "apply",
 							'click': ui.createHandlerFn(this, function() {
-								Promise.all([adapter_http.saveValue(), adapter_snmp.saveValue()]).then(function(){
-									// Check all form validity
-									console.log("MODAL")
-									var widget_list = [proto, restart_time, relay_number, state_on_term, state_off_term];
-									var form_valid = true;
-									for(var w of widget_list) {
-										if(!w.isValid()) {
-											form_valid = false
-											break;
+								// TODO
+								// make a generation like this:
+								// if(relay_data["proto"] == "SNMP") adapter_snmp.saveValue()
+								adapter_http.saveValue()
+									.then(function(){
+										// Check all form validity
+										var widget_list = [proto, restart_time, relay_number, state_on_term, state_off_term];
+										var form_valid = true;
+										for(var w of widget_list) {
+											if(!w.isValid()) {
+												form_valid = false
+												break;
+											}
 										}
-									}
-									if (form_valid) {
-										relay_data["name"] = memo.getValue()
-										relay_data["proto"] = proto.getValue()
-										relay_data["restart_time"] = restart_time.getValue()
-										//relay_data["dest_addr"] = dest_addr_port.getValue().split(":")[0]
-										//relay_data["dest_port"] = dest_addr_port.getValue().split(":")[1]
-										relay_data["number"] = relay_number.getValue()
-										//relay_data["login"] = login.getValue()
-										//relay_data["password"] = password.getValue()
-										globals_data["state"] = []
-										globals_data["state"][0] = "0." + state_off_term.getValue()
-										globals_data["state"][1] = "1." + state_on_term.getValue()
-										//return handleEdit(relay_id, relay_data, globals_data);
-									}
-									else {
-										return 0;
-									}
-								}, function() {console.log("REJECT SAVING PROTOCOL ADAPTER DATA");})
+										if (form_valid) {
+											relay_data["name"] = memo.getValue()
+											relay_data["proto"] = proto.getValue()
+											relay_data["restart_time"] = restart_time.getValue()
+											relay_data["number"] = relay_number.getValue()
+											globals_data["state"] = []
+											globals_data["state"][0] = "0." + state_off_term.getValue()
+											globals_data["state"][1] = "1." + state_on_term.getValue()
+											//return handleEdit(relay_id, relay_data, globals_data);
+										}
+										else {
+											return 0;
+										}
+									}, function() {console.log("REJECT SAVING PROTOCOL ADAPTER DATA");})
 							})
 						}, _('Сохранить'))
 					])

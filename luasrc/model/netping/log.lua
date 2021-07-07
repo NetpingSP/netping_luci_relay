@@ -13,6 +13,7 @@ function log(title, obj)
 	else
 		util.perror(title)
 	end
+	return true
 end
 
 return log
