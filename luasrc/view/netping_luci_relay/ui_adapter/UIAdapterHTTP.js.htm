@@ -3,102 +3,181 @@
 L.require('ui').then(function(ui) {
 	L.require('dom').then(function(dom) {
 		L.require("uci").then(function(uci) {
-			uci.load("netping_luci_relay_adapter_http").then(function(out){
-				var UIAdapterHTTP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
-					__init__: function(relay_id, options) {
-						this.fields = {},
-						this.proto = "HTTP"
-						this.config = "netping_luci_relay_adapter_http"
-						this.relay_id = relay_id;
-						this.options = Object.assign({
-							isActive: false,
-						}, options);
+			L.require("rpc").then(function(rpc) {
+				uci.load("netping_luci_relay_adapter_http").then(function(out){
+					var UIAdapterHTTP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
+						__init__: function(relay_id) {
 
-						var section = uci.get(this.config, relay_id) || false;
-						var hostport = '';
+							this.fields = {},
+							this.proto = "HTTP"
+							this.config = "netping_luci_relay_adapter_http"
+							this.adapter_id = relay_id;
+							this.needsToSave = false
+							this.isActive = false
 
-						if(section != false) {
-							hostport = section["address"] + ":" + section["port"];
-						} else {
-							hostport = '';						
-						}
-						
-						this.fields = {
-							"hostport": new ui.Textfield(hostport, { 
-								maxlength: 128, 
-								datatype: "hostport"
-							}),
+							var section = this.addSection();
 
-							"login": new ui.TextFieldStyled(section["login"], { 
-								datatype: "rangelength(3,8)",
-								htmlStyle: "width: 150px"
-							}),
+							var hostport = '';
+							if(section["address"] && section["port"]) {
+								hostport = section["address"] + ":" + section["port"];
+							} else {
+								hostport = '';						
+							}
+							
+							this.fields = {
+								"hostport": new ui.Textfield(hostport, { 
+									maxlength: 128, 
+									datatype: "hostport"
+								}),
 
-							"password": new ui.TextFieldStyled(section["password"], { 
-								password: true,
-								datatype: "rangelength(4,16)",
-								htmlStyle: "width: 96px"
-							})
-						}
-					},
+								"login": new ui.TextFieldStyled(section["login"], { 
+									datatype: "rangelength(3,8)",
+									htmlStyle: "width: 150px"
+								}),
 
-					/** @override */
-					render: function() {
-						var classActive = (this.options.isActive) ? ' active' : ''
-						container = E('div', { class: 'table modal-section-param adapter http' + classActive}, [
-							E('div', {class: 'tr table-titles'}, [
-								E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола " + this.proto)),
-								E('div', {class: 'th', style: "text-align: right;"}, _("Значение")),
-							]),
-							E('div', {class: 'tr cbi-rowstyle-1'}, [
-								E('div', {class: 'td'}, "Адрес/порт удалённого реле"),
-								E('div', {class: 'td', style: "text-align: right;"}, [
-									this.fields['hostport'].render()
-								])
-							]),
-							E('div', {class: 'tr cbi-rowstyle-2'}, [
-								E('div', {class: 'td'}, "Логин"),
-								E('div', {class: 'td', style: "text-align: right;"}, [
-									this.fields['login'].render()
-								])
-							]),
-							E('div', {class: 'tr cbi-rowstyle-1'}, [
-								E('div', {class: 'td'}, "Пароль"),
-								E('div', {class: 'td', style: "text-align: right;"}, [
-									this.fields['password'].render()
+								"password": new ui.TextFieldStyled(section["password"], { 
+									password: true,
+									datatype: "rangelength(4,16)",
+									htmlStyle: "width: 96px"
+								})
+							}
+						},
+
+						/** @override */
+						render: function() {
+							var classActive = (this.isActive) ? ' active' : ''
+							var container = E('div', { class: 'table modal-section-param adapter http' + classActive}, [
+								E('div', {class: 'tr table-titles'}, [
+									E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола " + this.proto)),
+									E('div', {class: 'th', style: "text-align: right;"}, _("Значение")),
+								]),
+								E('div', {class: 'tr cbi-rowstyle-1'}, [
+									E('div', {class: 'td'}, "Адрес/порт удалённого реле"),
+									E('div', {class: 'td', style: "text-align: right;"}, [
+										this.fields['hostport'].render()
+									])
+								]),
+								E('div', {class: 'tr cbi-rowstyle-2'}, [
+									E('div', {class: 'td'}, "Логин"),
+									E('div', {class: 'td', style: "text-align: right;"}, [
+										this.fields['login'].render()
+									])
+								]),
+								E('div', {class: 'tr cbi-rowstyle-1'}, [
+									E('div', {class: 'td'}, "Пароль"),
+									E('div', {class: 'td', style: "text-align: right;"}, [
+										this.fields['password'].render()
+									])
 								])
 							])
-						])
-						
-						return this.bind(container);
-					},
+							return this.bind(container);
+						},
 
 
-					/** @private */
-					bind: function(container) {
-						this.node = container
-						var self = this
+						/** @private */
+						bind: function(container) {
+							this.node = container
+							var self = this
+							dom.bindClassInstance(container, this);
 
-						dom.bindClassInstance(container, this);
-
-						// Cusom override:
-						// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
-						window.EventBus.register(this.node, 'bus-proto-changed', [],
-							function(ev) {
-								if(ev.detail["proto"] == self.proto) {
-									container.classList.add("active")
-
-								} else {
-									container.classList.remove("active")
+							// Cusom override:
+							// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
+							
+							window.EventBus.register(this.node, 'bus-proto-changed', [],
+								function(ev) {
+									if(ev.detail["proto"] == self.proto) {
+										container.classList.add("active")
+										self.isActive = true
+									} else {
+										container.classList.remove("active")
+										self.isActive = false
+										// remove changes user made
+										uci.unload(self.config)
+									}
 								}
-							}
-						);
-					
-						return container;
-					},
-				});
+							);
 
-				ui["AdapterHTTP"] = UIAdapterHTTP;
+
+							// We save uci when user focus out the field
+							window.EventBus.register(this.fields["hostport"].node, 'http-proto-changed-hostport', ["focusout"],
+								function(ev) {
+									var hostport = self.fields["hostport"].getValue().split(":")
+									self.addSection()
+									uci.set(self.config, self.adapter_id, "address", hostport[0])
+									uci.set(self.config, self.adapter_id, "port", hostport[1])
+									self.needsToSave = true
+								}
+							);
+
+							window.EventBus.register(this.fields["login"].node, 'http-proto-changed-login', ["focusout"],
+								function(ev) {
+									self.addSection()
+									uci.set(self.config, self.adapter_id, "login", self.fields["login"].getValue())
+									self.needsToSave = true
+								}
+							);
+
+							window.EventBus.register(this.fields["password"].node, 'http-proto-changed-password', ["focusout"],
+								function(ev) {
+									self.addSection()
+									uci.set(self.config, self.adapter_id, "password", self.fields["password"].getValue())
+									self.needsToSave = true
+								}
+							);
+
+						
+							return container;
+						},
+						// {
+						//	"fieldname": "value"
+						// }
+						getValue: function() {
+							var data = {}
+							for (var name in this.fields) {
+								data[name] = this.fields[name].getValue()
+							}
+							return data;
+						},
+
+						// if user filled in protocol at first time, then
+						// we need to prepare uci section initially
+						addSection: function() {
+							var sec = uci.get(this.config, this.adapter_id)
+							if(sec == null) {
+								sec = uci.add(this.config, "http", this.adapter_id)	
+								sec = uci.get(this.config, this.adapter_id)
+							}
+							return(sec)
+						},
+
+						// When user submit the form, we have to save & commit 
+						// the protocol fields first.
+						saveValue: function() {
+							if(this.isActive) {
+								var self = this	
+								var saved = new Promise(function(res, rej){
+									if(self.needsToSave) {
+										uci.save().then(L.bind(function(s){
+											res()
+										}))
+									} else rej()
+								});
+								var applied = new Promise(function(res, rej){
+									if(self.needsToSave) {
+										uci.apply().then(L.bind(function() {
+											self.needsToSave = false
+											res()
+										}))
+									} else rej()
+								});	
+								return Promise.all([saved, applied])
+							} else {
+								return Promise.all([])
+							}
+						}
+					});
+					ui["AdapterHTTP"] = UIAdapterHTTP;
+				});
 			});				
 		});
 	});

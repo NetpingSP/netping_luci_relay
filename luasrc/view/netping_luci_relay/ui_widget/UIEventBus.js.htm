@@ -139,12 +139,19 @@ L.require('ui').then(function(ui) {
 						details: proto
 					}));
 				},
+
 */
+				removeEvents: function(target, eventNameList, func) {
+					for(var i=0; i<eventNameList.length; i++) {
+						target.removeEventListener(eventNameList[i], func)
+					}
+				},
+
 				register: function(source, eventName, sourceEvents=[], callback) {
 					this.registerEvents(source, eventName, sourceEvents)
 					this.node.addEventListener(eventName, L.bind(function(ev) { 
 						return callback(ev)
-					}, this))
+					}, this), true)
 				},
 
 				register2: function(source, eventName, sourceEvents=[], callback) {

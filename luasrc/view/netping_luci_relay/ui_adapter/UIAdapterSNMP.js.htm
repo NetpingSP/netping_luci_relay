@@ -5,16 +5,16 @@ L.require('ui').then(function(ui) {
 		L.require("uci").then(function(uci) {
 			uci.load("netping_luci_relay_adapter_snmp").then(function(out){
 				var UIAdapterSNMP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
-					__init__: function(relay_id, options) {
+					__init__: function(relay_id) {
+
 						this.fields = {},
 						this.proto = "SNMP"
 						this.config = "netping_luci_relay_adapter_snmp"
-						this.relay_id = relay_id;
-						this.options = Object.assign({
-							isActive: false,
-						}, options);
+						this.adapter_id = relay_id;
+						this.needsToSave = false
+						this.isActive = false
 
-						var section = uci.get(this.config, relay_id) || false;
+						var section = this.addSection();
 
 						this.fields = {
 							"address": new ui.Textfield(section["address"], { 
@@ -22,7 +22,7 @@ L.require('ui').then(function(ui) {
 								datatype: "host" 
 							}),
 
-							"OID": new ui.Textfield(section["OID"], { 
+							"oid": new ui.Textfield(section["oid"], { 
 								maxlength: 128
 							}),
 
@@ -37,15 +37,12 @@ L.require('ui').then(function(ui) {
 							}),
 
 						}
-						this.options = Object.assign({
-							isActive: false,
-						}, options);
 					},
 
 					/** @override */
 					render: function() {
-						var classActive = (this.options.isActive) ? ' active' : ''
-						container = E('div', { class: 'table modal-section-param adapter snmp' + classActive}, [
+						var classActive = (this.isActive) ? ' active' : ''
+						var container = E('div', { class: 'table modal-section-param adapter snmp' + classActive}, [
 							E('div', {class: 'tr table-titles'}, [
 								E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола " + this.proto)),
 								E('div', {class: 'th', style: "text-align: right;"}, _("Значение")),
@@ -59,7 +56,7 @@ L.require('ui').then(function(ui) {
 							E('div', {class: 'tr cbi-rowstyle-2'}, [
 								E('div', {class: 'td'}, "OID"),
 								E('div', {class: 'td', style: "text-align: right;"}, [
-									this.fields['OID'].render()
+									this.fields['oid'].render()
 								])
 							]),
 							E('div', {class: 'tr cbi-rowstyle-1'}, [
@@ -89,18 +86,102 @@ L.require('ui').then(function(ui) {
 
 						// Cusom override:
 						// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
+						
 						window.EventBus.register(this.node, 'bus-proto-changed', [],
 							function(ev) {
 								if(ev.detail["proto"] == self.proto) {
 									container.classList.add("active")
+									self.isActive = true
 								} else {
 									container.classList.remove("active")
+									self.isActive = false
+									// remove changes user made
+									uci.unload(self.config)
 								}
 							}
 						);
-					
+						
+
+
+
+						window.EventBus.register(this.fields["address"].node, 'http-proto-changed-address', ["focusout"],
+							function(ev) {
+								self.addSection()
+								uci.set(self.config, self.adapter_id, "address", self.fields["address"].getValue())
+								self.needsToSave = true
+							}
+						);
+						window.EventBus.register(this.fields["oid"].node, 'http-proto-changed-oid', ["focusout"],
+							function(ev) {
+								self.addSection()
+								uci.set(self.config, self.adapter_id, "oid", self.fields["oid"].getValue())
+								self.needsToSave = true
+							}
+						);
+						window.EventBus.register(this.fields["port"].node, 'http-proto-changed-port', ["focusout"],
+							function(ev) {
+								self.addSection()
+								uci.set(self.config, self.adapter_id, "port", self.fields["port"].getValue())
+								self.needsToSave = true
+							}
+						);
+						window.EventBus.register(this.fields["community"].node, 'http-proto-changed-community', ["focusout"],
+							function(ev) {
+								self.addSection()
+								uci.set(self.config, self.adapter_id, "community", self.fields["community"].getValue())
+								self.needsToSave = true
+							}
+						);
+
 						return container;
 					},
+					// {
+					//	"fieldname": "value"
+					// }
+					getValue: function() {
+						var data = {}
+						for (var name in this.fields) {
+							data[name] = this.fields[name].getValue()
+						}
+						return data;
+					},
+
+					// if user filled in protocol at first time, then
+					// we need to prepare uci section initially
+					addSection: function() {
+						var sec = uci.get(this.config, this.adapter_id)
+						if(sec == null) {
+							sec = uci.add(this.config, "snmp", this.adapter_id)	
+							sec = uci.get(this.config, this.adapter_id)
+						}
+						return(sec)
+					},
+
+
+					// When user submit the form, we have to save & commit 
+					saveValue: function() {
+						if(this.isActive) {
+							var self = this	
+							var saved = new Promise(function(res, rej){
+								if(self.needsToSave) {
+									uci.save().then(L.bind(function(s){
+										res()
+									}))
+								} else rej()
+							});
+							var applied = new Promise(function(res, rej){
+								if(self.needsToSave) {
+									uci.apply().then(L.bind(function() {
+										self.needsToSave = false
+										res()
+									}))
+								} else rej()
+							});	
+							return Promise.all([saved, applied])
+						} else {
+							return Promise.all([])
+						}
+					}
 				});
 
 				ui["AdapterSNMP"] = UIAdapterSNMP

@@ -66,6 +66,9 @@ function snmp:render(optname)
 			return fs.readfile(path)
 		end,
 
+		unset = function()
+			return "adapter_smtp.unsetValue()"
+		end,
 
 		-- All trivial options are rendered as is.
 		-----------------------------------------

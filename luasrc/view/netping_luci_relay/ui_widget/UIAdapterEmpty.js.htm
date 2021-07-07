@@ -8,7 +8,7 @@ L.require('ui').then(function(ui) {
 
 			/** @override */
 			render: function() {
-				container = E('div', { class: 'table modal-section-param adapter empty active'}, [
+				var container = E('div', { class: 'table modal-section-param adapter empty active'}, [
 					E('div', {class: 'tr table-titles'}, [
 						E('div', {class: 'th', style: 'width: 100%'}, _("Параметры протокола")),
 						E('div', {class: 'th'}, ""),
@@ -34,7 +34,9 @@ L.require('ui').then(function(ui) {
 				// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
 				window.EventBus.register(this.node, 'bus-proto-changed', [],
 					function(ev) {
-						if(ev.detail["proto"] == "undefined" || ev.detail["proto"].length == 0) {
+						var proto = ev.detail["proto"] || false
+						console.log(proto)
+						if(!proto) {
 							container.classList.add("active")
 
 						} else {

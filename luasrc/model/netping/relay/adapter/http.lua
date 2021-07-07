@@ -62,6 +62,10 @@ function http:render(optname, ...)
 			return "adapter_http.render()"
 		end,
 
+		unset = function()
+			return "adapter_http.unsetValue(); console.log('http unset')"
+		end,
+
 		-- All trivial options are rendered as is
 		-----------------------------------------
 		default = function(optname)

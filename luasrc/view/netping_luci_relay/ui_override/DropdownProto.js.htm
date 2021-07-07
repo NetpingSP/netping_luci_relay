@@ -61,12 +61,12 @@ L.require("dom").then(function(dom)	{
 				}));
 
 				// Custom override:
-				// Emits event on EventBus. UIAdapterHTTP and similars are subscribed to the event.
+				// Emits event on EventBus, once the Dropdown value is changed. 
+				// UIAdapterHTTP and similars are subscribed to the event.
 				window.EventBus.node.dispatchEvent(new CustomEvent("bus-proto-changed", {
 					bubbles: true,
 					detail: { "proto": sb.value }
 				}));
-
 			},
 
 			/** @override */
@@ -123,9 +123,9 @@ L.require("dom").then(function(dom)	{
 					sb.appendChild(E('script', { type: 'item-template' },
 						this.options.create_markup));
 
-				//console.log("RENDER",this.values)
 				// Custom override:
-				// Emits event on EventBus. UIAdapterHTTP and similars are subscribed to the event.
+				// Emits event on EventBus, once the Dropdown is rendered. 
+				// UIAdapterHTTP and similars are subscribed to the event.
 				var self = this
 				self.timeout = setTimeout(function () {
 					window.EventBus.node.dispatchEvent(new CustomEvent("bus-proto-changed", {
