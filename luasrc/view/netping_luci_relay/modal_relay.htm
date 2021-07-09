@@ -11,6 +11,7 @@
 	local dropdown, dropdown_js, name = {}, '', ''
 	for adptype, adapter in pairs(adapter_list) do
 		print(adapter():render("cssfile"))
+		print(adapter():render("validator"))
 		print(adapter():render("widgetfile"))
 		dropdown[#dropdown+1] = string.format('"%s": "%s"', adapter():getLabel(), adapter():getLabel())
 	end

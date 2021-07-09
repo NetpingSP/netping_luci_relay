@@ -1,0 +1,49 @@
+
+
+<script type="text/javascript">
+//<![CDATA[
+    var netping_luci_relay_adapter_snmp_valid = function (fieldname) {
+        var grammar = {
+            //  ---------------------------------------------------------------------
+            //  ADD field name as key and compiled grammar as value
+            //  Grammar compilation is created using this specification:
+            //  https://netping.atlassian.net/wiki/spaces/PROJ/pages/2809857522/html-
+            //  =====================================================================
+            address: {
+                Lexer: undefined,
+                ParserRules: [
+                    {"name": "MAIN", "symbols": ["IP"]},
+                    {"name": "IP", "symbols": ["NUMBER", {"literal":"."}, "NUMBER", {"literal":"."}, "NUMBER", {"literal":"."}, "NUMBER"]},
+                    {"name": "NUMBER", "symbols": ["From_0_to_255"]},
+                    {"name": "From_0_to_255", "symbols": [/[0-9]/]},
+                    {"name": "From_0_to_255", "symbols": [/[1-9]/, /[0-9]/]},
+                    {"name": "From_0_to_255", "symbols": [{"literal":"1"}, /[0-9]/, /[0-9]/]},
+                    {"name": "From_0_to_255", "symbols": [{"literal":"2"}, /[0-5]/, /[0-5]/]}
+                ],
+                ParserStart: "MAIN"
+            }, 
+            // The next field is followed by previous below:
+            // =============================================
+            oid: {
+                Lexer: undefined,
+                ParserRules: [
+                    {"name": "MAIN", "symbols": ["OID"]},
+                    {"name": "OID$ebnf$1$subexpression$1", "symbols": [{"literal":"."}, "SIDn"]},
+                    {"name": "OID$ebnf$1", "symbols": ["OID$ebnf$1$subexpression$1"]},
+                    {"name": "OID$ebnf$1$subexpression$2", "symbols": [{"literal":"."}, "SIDn"]},
+                    {"name": "OID$ebnf$1", "symbols": ["OID$ebnf$1", "OID$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+                    {"name": "OID", "symbols": ["SID1", "OID$ebnf$1"]},
+                    {"name": "SID1", "symbols": [/[0-2]/]},
+                    {"name": "SIDn", "symbols": [/[0-9]/]},
+                    {"name": "SIDn", "symbols": [/[1-9]/, /[0-9]/]},
+                    {"name": "SIDn", "symbols": [/[1-9]/, /[0-9]/, /[0-9]/]},
+                    {"name": "SIDn", "symbols": [/[1-9]/, /[0-9]/, /[0-9]/, /[0-9]/]},
+                    {"name": "SIDn", "symbols": [/[1-9]/, /[0-9]/, /[0-9]/, /[0-9]/, /[0-9]/]}
+                ],
+                ParserStart: "MAIN"
+            }
+        }       
+        return grammar[fieldname]
+    }
+//]]>
+</script>

@@ -1,0 +1,26 @@
+
+config http 'template'
+	option address '0.0.0.0'
+	option port '0'
+	option login '0'
+	option password '0'
+	option hostport '0:0'
+
+config http 'cfg062442'
+	option password 'password'
+	option login 'user'
+	option address '192.168.0.1'
+	option port '80'
+	option hostport '192.168.0.1:80'
+
+config http 'cfg0a2442'
+	option password '12'
+	option login '1'
+	option address '1'
+	option port '2'
+	option hostport '1:2'
+
+config http 'cfg092442'
+	option address '0.0.0.0'
+	option port '0'
+

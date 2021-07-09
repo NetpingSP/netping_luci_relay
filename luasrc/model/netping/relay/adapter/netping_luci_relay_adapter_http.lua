@@ -85,6 +85,11 @@ function http:render(optname, ...)
 			return fs.readfile(path)
 		end,
 
+		validator = function()
+			local path = util.libpath() .. '/view/netping_luci_relay/ui_adapter/' .. adapter_jsname .. '.valid.js.htm'
+			return fs.readfile(path)
+		end,
+
 		widgetfile = function()
 			local path = util.libpath() .. '/view/netping_luci_relay/ui_adapter/' .. adapter_jsname .. '.js.htm'
 			return fs.readfile(path)

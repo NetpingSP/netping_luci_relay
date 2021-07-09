@@ -24,7 +24,7 @@ L.require('ui').then(function(ui) {
 						this.fields = {
 							"hostport": new ui.Textfield(section["hostport"], { 
 								maxlength: 128, 
-								datatype: "hostport"
+								validate: this.nearleyValidator("hostport", "Введите хост:порт, например: 192.168.0.1:85")
 							}),
 
 							"login": new ui.TextFieldStyled(section["login"], { 
@@ -117,6 +117,20 @@ L.require('ui').then(function(ui) {
 						return(sec)
 					},
 
+					nearleyValidator: function(field, errormsg) {
+						return function(user_input_text) {
+							// this function is declared at "ui_adapter/"netping_luci_relay_adapter_http.valid.js.htm"
+							var gramma = netping_luci_relay_adapter_http_valid(field)
+							const parser = new nearley.Parser(nearley.Grammar.fromCompiled(gramma));
+							try {
+								parser.feed(user_input_text)
+								return true // it's a requirement of LuCI widget API
+							}
+							catch (e) {
+								return errormsg
+							}
+						}
+					}
 				});
 				ui["netping_luci_relay_adapter_http"] = UIAdapterHTTP;
 			});
