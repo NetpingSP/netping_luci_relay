@@ -2,25 +2,30 @@ local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 local log = require "luci.model.netping.log"
 local config = "netping_luci_relay"
+local relay_section = "relay"
 
 local relay = {}
 relay.loaded = {}
 
 function relay:new()
 	local prototype = uci:get_all(config, "relay_prototype")
+	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do prototype[k] = nil end
 	local globals = uci:get_all(config, "globals")
-	local count = 0
-	uci:foreach(config, "relay", function() count = count + 1 end)
-	prototype["name"] = globals["default_name"] .. " " .. count
-	prototype["dest_port"] = globals["default_port"]
-	prototype["restart_time"] = globals["restart_time"]
-	for _, k in pairs({".name", ".anonymous", ".type"}) do prototype[k] = nil end
 
-	uci:section(config, "relay", nil, prototype)
-	uci:commit(config)
+	local count = 0
+	uci:foreach(config, relay_section, function() count = count + 1 end)
+	prototype["name"] = globals["default_name"] .. " " .. count
+	prototype["restart_time"] = globals["restart_time"]
+
+
+	local relay_id = uci:section(config, relay_section, nil, prototype) or log("Unable to do uci:section()", {relay_section, prototype})
+	local success = uci:commit(config) or log("Unable to uci:commit()", {config})
 	relay.loaded = prototype
+	relay.id = relay_id
+	log("Table:New()", relay.loaded)
 	return relay.loaded
 end
+
 
 function relay:load()
 	return relay.loaded
@@ -37,12 +42,12 @@ function relay:set(optname, value)
 end
 
 function relay:delete()
-	local id = relay.loaded[".name"]
+	local id = relay.id
 	-- Don't forget to protect embedded relays from deleting
 	local embedded = uci:get(config, id, "embedded") == "1"
 	if not embedded then
-		uci:delete(config, id)
-		uci:commit(config)
+		local sucsess = uci:delete(config, id) or log("Unable to uci:delete()", {config, id})
+		succsess = uci:commit(config) or log("Unable uci:commit() after uci:delete", {config})
 	end
 end
 
@@ -89,16 +94,15 @@ end
 -- Make a Functable to load relay with "relay(id)" style
 local metatable = { 
 	__call = function(table, ...)
+
+		-- if id provided, then load from uci or create with template
+		-- if id not provided, then only create the object for methods using
 		local id = arg[1] ~= nil and arg[1] or nil
-		if id then
-			uci:foreach(config, "relay", function(r)
-				if (r[".name"] ~= "relay_prototype") then
-					if(r[".name"] == id) then
-						table.loaded = r
-						return
-					end
-				end
-			end)
+		if(id) then
+			table.id = id
+			table.loaded = uci:get_all(config, id) or table:new(id)
+		else
+			table:new()
 		end
 		return table
 	end

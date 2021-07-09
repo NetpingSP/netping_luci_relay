@@ -3,21 +3,21 @@
 function add_relay() {
 	var action = "add",
 		relay_id = null,
-		payload = {"relay_data": {}, "globals_data": {}};
+		payload = {"relay_data": {}, "globals_data": {}, "adapter_data": {}};
 	send_action(action, relay_id, payload);
 }
 
 function delete_relay(btn) {
 	var action = "delete",
 		relay_id = btn.getAttribute("data-relay"),
-		payload = {"relay_data": {}, "globals_data": {}};
+		payload = {"relay_data": {}, "globals_data": {}, "adapter_data": {}};
 	send_action(action, relay_id, payload);
 }
 
 function switch_relay(btn) {
 	var action = "switch",
 		relay_id = btn.getAttribute("data-relay"),
-		payload = {"relay_data": {}, "globals_data": {}};
+		payload = {"relay_data": {}, "globals_data": {}, "adapter_data": {}};
 	send_action(action, relay_id, payload);
 }
 
@@ -53,7 +53,7 @@ function rename_relay(inp) {
 				if(tooltip) tooltip.style.display = "none";
 				inp.classList.remove("cbi-input-invalid");
 
-				payload = {"relay_data": {"name": new_name}, "globals_data": {}};
+				payload = {"relay_data": {"name": new_name}, "globals_data": {}, "adapter_data": {}};
 				send_action(action, relay_id, payload);
 			}
 		})

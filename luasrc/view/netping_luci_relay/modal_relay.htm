@@ -9,11 +9,11 @@
 %>
 <%
 	local adapter_list = require "luci.model.netping.relay.adapter_list"
-	local dropdown, dropdown_js = {}, ''
+	local dropdown, dropdown_js, name = {}, '', ''
 	for adptype, adapter in pairs(adapter_list) do
 		print(adapter():render("cssfile"))
 		print(adapter():render("widgetfile"))
-		dropdown[#dropdown+1] = string.format('"%s": "%s"', adptype:upper(), adptype:upper())
+		dropdown[#dropdown+1] = string.format('"%s": "%s"', adapter():getLabel(), adapter():getLabel())
 	end
 	dropdown_js = "{" .. table.concat(dropdown, ", ") .. "}"
 
@@ -49,7 +49,8 @@ function edit_relay(btn) {
 				globals_data = uci.get("<%=config%>", "globals");
 				var globals = widgetPopulation("globals", uci),
 					relay_data = uci.get("<%=config%>", relay_id),
-					embedded = relay_data["embedded"] == '1' ? true : false
+					embedded = relay_data["embedded"] == '1' ? true : false,
+					adapter_data = {};
 
 				var proto = new ui.DropdownProto(relay_data["proto"], <%= dropdown_js %>, { 
 					disabled: embedded,
@@ -120,11 +121,11 @@ function edit_relay(btn) {
 												
 											]),
 											E('div', { class: 'cbi-value-field-2col'}, [
-												empty_adapter.render(),
 												// ADAPTER WIDGETS RENDER
 												<%
 													for atype, adapter in pairs(adapter_list) do
-														print(adapter(atype):render("jsrender") .. ",\n")
+
+														print(adapter():render("jsrender") .. ",\n")
 													end
 												%>
 												E('div', { class: 'table modal-section-param more-params'}, [
@@ -154,6 +155,7 @@ function edit_relay(btn) {
 							])
 						])
 					]),
+
 					E('div', { class: 'cbi-value-field' }, [
 						E('div', { 
 							class: 'btn', 
@@ -165,31 +167,35 @@ function edit_relay(btn) {
 								// TODO
 								// make a generation like this:
 								// if(relay_data["proto"] == "SNMP") adapter_snmp.saveValue()
-								adapter_http.saveValue()
-									.then(function(){
-										// Check all form validity
-										var widget_list = [proto, restart_time, relay_number, state_on_term, state_off_term];
-										var form_valid = true;
-										for(var w of widget_list) {
-											if(!w.isValid()) {
-												form_valid = false
-												break;
-											}
-										}
-										if (form_valid) {
-											relay_data["name"] = memo.getValue()
-											relay_data["proto"] = proto.getValue()
-											relay_data["restart_time"] = restart_time.getValue()
-											relay_data["number"] = relay_number.getValue()
-											globals_data["state"] = []
-											globals_data["state"][0] = "0." + state_off_term.getValue()
-											globals_data["state"][1] = "1." + state_on_term.getValue()
-											//return handleEdit(relay_id, relay_data, globals_data);
-										}
-										else {
-											return 0;
-										}
-									}, function() {console.log("REJECT SAVING PROTOCOL ADAPTER DATA");})
+								// adapter_data["netping_luci_relay_adapter_snmp"] = adapter_snmp.getValue()
+								<%
+									for atype, adapter in pairs(adapter_list) do
+										print(string.format('adapter_data["%s"] = %s', atype, adapter():render("getvalues")))
+									end
+								%>
+								// Check all form validity
+								var widget_list = [proto, restart_time, relay_number, state_on_term, state_off_term];
+								var form_valid = true;
+								for(var w of widget_list) {
+									if(!w.isValid()) {
+										form_valid = false
+										break;
+									}
+								}
+								if (form_valid) {
+									relay_data["name"] = memo.getValue()
+									relay_data["proto"] = proto.getValue()
+									relay_data["restart_time"] = restart_time.getValue()
+									relay_data["number"] = relay_number.getValue()
+									globals_data["state"] = []
+									globals_data["state"][0] = "0." + state_off_term.getValue()
+									globals_data["state"][1] = "1." + state_on_term.getValue()
+									return handleEdit(relay_id, relay_data, globals_data, adapter_data);
+								}
+								else {
+									return 0;
+								}
+
 							})
 						}, _('Сохранить'))
 					])
@@ -199,8 +205,8 @@ function edit_relay(btn) {
 	})
 }
 
-function handleEdit(relay_id, relay_data, globals_data) {
-	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data } )
+function handleEdit(relay_id, relay_data, globals_data, adapter_data) {
+	send_action("edit", relay_id, { "relay_data": relay_data, "globals_data": globals_data, "adapter_data": adapter_data } )
 }
 //]]>
 </script>

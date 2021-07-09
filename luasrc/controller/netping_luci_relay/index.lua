@@ -9,6 +9,7 @@ local log = require "luci.model.netping.log"
 local socket = require 'socket'
 
 local relay = require "luci.model.netping.relay.main"
+local adapter_list = require "luci.model.netping.relay.adapter_list"
 
 
 function notify_backend(action, relay_id, payload)
@@ -32,9 +33,11 @@ function do_relay_action(action, relay_id)
 	payload["relay_data"] = luci.jsonc.parse(luci.http.formvalue("relay_data"))
 	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do payload["relay_data"][k] = nil end
 	payload["globals_data"] = luci.jsonc.parse(luci.http.formvalue("globals_data"))
+	payload["adapter_data"] = luci.jsonc.parse(luci.http.formvalue("adapter_data"))
 
 	-- type "logread for debug this:"
 	-- if type(payload) == "table" then util.dumptable(payload) else util.perror(payload) end
+	local sucsess = false
 
 	local commands = {
 		add = function(...)
@@ -44,26 +47,45 @@ function do_relay_action(action, relay_id)
 			util.perror(payload["relay_data"]["name"])
 			if payload["relay_data"]["name"] then
 				relay(relay_id):set("name", payload["relay_data"]["name"])
-				socket.sleep(0.02)
 			end
 		end,
 		delete = function(relay_id, ...)
+			for a_type, adapter in pairs(adapter_list) do
+				adapter(relay_id):delete()
+			end
 			relay(relay_id):delete()
 		end,
 		switch = function(relay_id, ...)
 			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
 			relay(relay_id):set("state", new_state)
-			socket.sleep(0.02)
 		end,
 		edit = function(relay_id, payloads)
+			-- apply relay settings
 			local allowed_relay_options = util.keys(uci:get_all(config, "relay_prototype"))
 			for key, value in pairs(payloads["relay_data"]) do
 				if util.contains(allowed_relay_options, key) then
 					uci:set(config, relay_id, key, value)
-					socket.sleep(0.02)
 				end
 			end
+
+			-- apply settings of multiple adapters
+			for a_config, a_data in pairs(payload["adapter_data"]) do
+				for a_type, adapter in pairs(adapter_list) do
+					if(a_config == a_type) then
+						log("relay_id", relay_id)
+						adapter(relay_id):load(a_data)
+						adapter():set()
+						adapter():save()
+						adapter():commit()
+					end
+				end
+				--success = uci:load(a_config) and uci:commit(a_config)
+				--socket.sleep(0.9)
+				--success = success or log(a_config .. "commit() error", a_data)
+			end
+
+
 			-- apply settings.globals
 			local allowed_global_options = util.keys(uci:get_all(config, "globals"))
 			for key, value in pairs(payloads["globals_data"]) do
@@ -73,16 +95,13 @@ function do_relay_action(action, relay_id)
 					else
 						uci:set(config, "globals", key, value)
 					end
-					socket.sleep(0.02)
 				end
 			end
 		end,
 		default = function(...)
-			local sucsess = false
-
-			sucsess = uci:save(config)
-			success = uci:commit(config)
-			socket.sleep(0.7)
+			--sucsess = uci:save(config)
+			uci:load(config)
+			success = uci:load(config) and uci:commit(config)
 			success = success or log("uci:commit() error", payload)
 
 			http.prepare_content("text/plain")
