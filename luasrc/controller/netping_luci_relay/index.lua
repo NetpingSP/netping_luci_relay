@@ -73,11 +73,10 @@ function do_relay_action(action, relay_id)
 			for a_config, a_data in pairs(payload["adapter_data"]) do
 				for a_type, adapter in pairs(adapter_list) do
 					if(a_config == a_type) then
-						log("relay_id", relay_id)
-						adapter(relay_id):load(a_data)
-						adapter():set()
-						adapter():save()
-						adapter():commit()
+						--adapter(relay_id):load(a_data)
+						adapter(relay_id):set(a_data)
+						adapter(relay_id):save()
+						adapter(relay_id):commit()
 					end
 				end
 				--success = uci:load(a_config) and uci:commit(a_config)

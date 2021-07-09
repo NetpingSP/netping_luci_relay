@@ -22,31 +22,22 @@ function http:new(relay_id)
 	uci:commit(adapter_config)
 	http.loaded = template
 	http.id = relay_id
-	log("Table:New()", http.loaded)
+
 	return http.loaded
 end
 
-function http:load(...)
-	local data = {}
-	-- if obj provided as argument
-	if(#arg == 1) then
-		data = arg[1]
-		http.loaded = arg[1]
-	end
-	-- if object is not provided as argument
-	-- then uci data is used, if id existed there (see metatable operations below)
-	return http.loaded
-end
-
-function http:getLabel()
-	return adapter_section:upper()
-end
 
 function http:get(optname)
 	return http.loaded[optname]
 end
 
-function http:set()
+
+function http:set(...)
+	-- if obj provided as argument
+	if(#arg == 1) then
+		http.loaded = arg[1]
+	end
+	
 	local success = false
 	if(http.id) then
 		--success = uci:get(adapter_config, http.id) or log("Unable to uci:get()", {adapter.config, http.id})
@@ -55,7 +46,6 @@ function http:set()
 				success = uci:set(adapter_config, http.id, "address", util.split(value, ":")[1]) or log("Unable to uci:set() - ", {adapter_config, http.id, "address", util.split(value, ":")[1]})
 				success = uci:set(adapter_config, http.id, "port", util.split(value, ":")[2]) or log("Unable to uci:set() - ", {adapter_config, http.id, "port", util.split(value, ":")[2]})
 			end
-			--success = uci:set(adapter_config, http.id, key) or log("Unable to create section via uci:set() - ", {adapter_config, http.id, key})
 			success = uci:set(adapter_config, http.id, key, value) or log("Unable to uci:set() - ", {adapter_config, http.id, key, value})
 		end
 	else
@@ -74,12 +64,15 @@ function http:commit()
 end
 
 function http:delete()
-	log("DELETE", http)
 	local success = uci:delete(adapter_config, http.id) or log("Unable to uci:delete() adapter", adapter_config, http.id)
 	success = uci:save(adapter_config) or log("Unable to uci:save() config after deleting adapter", adapter_config)
 	success = uci:commit(adapter_config) or log("Unable to uci:commit() config after deleting adapter", adapter_config)
 	http.table = nil
 	http.id = nil
+end
+
+function http:getLabel()
+	return adapter_section:upper()
 end
 
 function http:render(optname, ...)
@@ -98,7 +91,7 @@ function http:render(optname, ...)
 		end,
 
 		jsinit = function()
-			return "var " .. adapter_jsname .. " = new ui.AdapterHTTP(relay_id)"
+			return string.format("var %s = new ui.%s(relay_id)", adapter_jsname, adapter_jsname)
 		end,
 
 		jsrender = function()

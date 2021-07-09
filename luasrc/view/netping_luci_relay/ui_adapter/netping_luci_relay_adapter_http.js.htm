@@ -7,24 +7,22 @@ L.require('ui').then(function(ui) {
 				var UIAdapterHTTP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
 					__init__: function(relay_id) {
 
-						this.fields = {},
+						this.fields = {};
+						this.adapter_id = relay_id;
+						this.needsToSave = false;
+						this.isActive = false;
+
+						// -------------------------------------------------------
+						// Change the protocol name, config, and form fields below
+						//--------------------------------------------------------
 						this.proto = "HTTP"
 						this.config = "netping_luci_relay_adapter_http"
-						this.adapter_id = relay_id;
-						this.needsToSave = false
-						this.isActive = false
+						//--------------------------------------------------------
 
 						var section = this.addSection();
 
-						var hostport = '';
-						if(section["address"] && section["port"]) {
-							hostport = section["address"] + ":" + section["port"];
-						} else {
-							hostport = '';						
-						}
-						
 						this.fields = {
-							"hostport": new ui.Textfield(hostport, { 
+							"hostport": new ui.Textfield(section["hostport"], { 
 								maxlength: 128, 
 								datatype: "hostport"
 							}),
@@ -40,6 +38,7 @@ L.require('ui').then(function(ui) {
 								htmlStyle: "width: 96px"
 							})
 						}
+						//--------------------------------------------------------
 					},
 
 					/** @override */
@@ -90,10 +89,6 @@ L.require('ui').then(function(ui) {
 								} else {
 									container.classList.remove("active")
 									self.isActive = false
-									// remove changes user made
-									//uci.unload(self.config) // not good idea
-									// TODO
-									// you should create local cache object in JS to keep and clear temporary values
 								}
 							}
 						);
@@ -123,7 +118,7 @@ L.require('ui').then(function(ui) {
 					},
 
 				});
-				ui["AdapterHTTP"] = UIAdapterHTTP;
+				ui["netping_luci_relay_adapter_http"] = UIAdapterHTTP;
 			});
 		});
 	});

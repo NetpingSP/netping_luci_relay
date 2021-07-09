@@ -7,12 +7,17 @@ L.require('ui').then(function(ui) {
 				var UIAdapterSNMP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
 					__init__: function(relay_id) {
 
-						this.fields = {},
+						this.adapter_id = relay_id;
+						this.needsToSave = false;
+						this.isActive = false;
+						this.fields = {};
+
+						// -------------------------------------------------------
+						// Change the protocol name, config, and form fields below
+						//--------------------------------------------------------
 						this.proto = "SNMP"
 						this.config = "netping_luci_relay_adapter_snmp"
-						this.adapter_id = relay_id;
-						this.needsToSave = false
-						this.isActive = false
+						//--------------------------------------------------------
 
 						var section = this.addSection();
 
@@ -37,6 +42,7 @@ L.require('ui').then(function(ui) {
 							}),
 
 						}
+						//---------------------------------------------------------
 					},
 
 					/** @override */
@@ -95,10 +101,6 @@ L.require('ui').then(function(ui) {
 								} else {
 									container.classList.remove("active")
 									self.isActive = false
-									// remove changes user made
-									//uci.unload(self.config) // not good idea
-									// TODO
-									// you should create local cache object in JS to keep and clear temporary values
 								}
 							}
 						);
@@ -129,7 +131,7 @@ L.require('ui').then(function(ui) {
 
 				});
 
-				ui["AdapterSNMP"] = UIAdapterSNMP
+				ui["netping_luci_relay_adapter_snmp"] = UIAdapterSNMP
 			});
 		});
 	});

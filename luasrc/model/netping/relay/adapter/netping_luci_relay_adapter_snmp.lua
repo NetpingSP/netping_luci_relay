@@ -22,37 +22,27 @@ function snmp:new(relay_id)
 	uci:commit(adapter_config)
 	snmp.loaded = template
 	snmp.id = relay_id
-	log("Table:New()", snmp.loaded)
+
 	return snmp.loaded
 end
 
-function snmp:load(...)
-	local data = {}
-	-- if obj provided as argument
-	if(#arg == 1) then
-		data = arg[1]
-		snmp.loaded = arg[1]
-		log("SNMP loaded", snmp.loaded)
-	end
-	-- if object is not provided as argument
-	-- then uci data is used, if id existed there (see metatable operations below)
-	return snmp.loaded
-end
-
-function snmp:getLabel()
-	return adapter_section:upper()
-end
 
 function snmp:get(optname)
 	return snmp.loaded[optname]
 end
 
-function snmp:set()
+
+function snmp:set(...)
+	-- if obj provided as argument
+	if(#arg == 1) then
+		snmp.loaded = arg[1]
+	end
+
 	local success = false
 	if(snmp.id) then
 		success = uci:get(adapter_config, snmp.id) or log("Unable to uci:get()", {adapter.config, snmp.id})
+		log("SNMP", snmp.loaded)
 		for key, value in pairs(snmp.loaded) do
-			success = uci:set(adapter_config, snmp.id, key) or log("Unable to create section via uci:set() - ", {adapter_config, snmp.id, key})
 			success = uci:set(adapter_config, snmp.id, key, value) or log("Unable to uci:set() - ", {adapter_config, snmp.id, key, value})
 		end
 	else
@@ -60,15 +50,18 @@ function snmp:set()
 	end
 end
 
+
 function snmp:save()
 	local success = uci:save(adapter_config)
 	success = success or log("ERROR: " .. adapter_config .. "uci:save() error", snmp.loaded)
 end
 
+
 function snmp:commit()
 	local success = uci:commit(adapter_config)
 	success = success or log("ERROR: " .. adapter_config .. "uci:commit() error", snmp.loaded)
 end
+
 
 function snmp:delete()
 	local success = uci:delete(adapter_config, snmp.id) or log("Unable to uci:delete() adapter", adapter_config, snmp.id)
@@ -76,6 +69,12 @@ function snmp:delete()
 	snmp.table = nil
 	snmp.id = nil
 end
+
+
+function snmp:getLabel()
+	return adapter_section:upper()
+end
+
 
 function snmp:render(optname, ...)
 	local value = snmp.loaded[optname]
@@ -93,7 +92,7 @@ function snmp:render(optname, ...)
 		end,
 
 		jsinit = function()
-			return "var " .. adapter_jsname .. " = new ui.AdapterSNMP(relay_id)"
+			return string.format("var %s = new ui.%s(relay_id)", adapter_jsname, adapter_jsname)
 		end,
 
 		jsrender = function()

@@ -34,9 +34,8 @@ L.require('ui').then(function(ui) {
 				// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
 				window.EventBus.register(this.node, 'bus-proto-changed', [],
 					function(ev) {
-						var proto = ev.detail["proto"] || false
-						console.log(proto)
-						if(!proto) {
+						var protoSelected = (ev.detail["proto"] != '0' && ev.detail["proto"] != undefined && ev.detail["proto"] != null) 
+						if(!protoSelected) {
 							container.classList.add("active")
 
 						} else {
@@ -44,7 +43,7 @@ L.require('ui').then(function(ui) {
 						}
 					}
 				);
-			
+	
 				return container;
 			},
 

@@ -26,19 +26,14 @@ function relay:new()
 	return relay.loaded
 end
 
-
-function relay:load()
-	return relay.loaded
-end
-
 function relay:get(optname)
 	return relay.loaded[optname]
 end
 
 function relay:set(optname, value)
-	local id = relay.loaded[".name"]
-	uci:set(config, id, optname, value)
-	uci:commit(config)
+	local id = relay.id
+	local success = uci:set(config, id, optname, value) or log("Unable to uci:set()", {config, id, optname, value})
+	success = uci:commit(config) or log("Unable to uci:commit()", {config, id, optname, value} )
 end
 
 function relay:delete()

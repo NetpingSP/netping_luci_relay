@@ -4,7 +4,6 @@
 	local util = require "luci.util"
 	local log = require "luci.model.netping.log"
 	local globals = uci:get_all(config, "globals")
-	--util.dumptable(globals)
 
 %>
 <%
@@ -92,6 +91,8 @@ function edit_relay(btn) {
 				var memo = new ui.Textfield(relay_data["name"], {
 					datatype: "rangelength(4,128)" });
 
+				var emptyProto = new ui.AdapterEmpty()
+
 
 				L.showModal('Редактировать реле', [
 					E('div', { class: 'cbi-map' }, [
@@ -122,9 +123,9 @@ function edit_relay(btn) {
 											]),
 											E('div', { class: 'cbi-value-field-2col'}, [
 												// ADAPTER WIDGETS RENDER
+												emptyProto.render(),
 												<%
 													for atype, adapter in pairs(adapter_list) do
-
 														print(adapter():render("jsrender") .. ",\n")
 													end
 												%>
