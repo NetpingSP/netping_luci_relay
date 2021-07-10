@@ -75,6 +75,10 @@ function snmp:getLabel()
 	return adapter_section:upper()
 end
 
+function snmp:getName()
+	return adapter_jsname
+end
+
 
 function snmp:render(optname, ...)
 	local value = snmp.loaded[optname]
@@ -106,6 +110,10 @@ function snmp:render(optname, ...)
 
 		getvalues = function()
 			return  adapter_jsname .. ".getValue()"
+		end,
+
+		getfields = function()
+			return  adapter_jsname .. ".getFields()"
 		end,
 
 		-- All trivial options are rendered as is

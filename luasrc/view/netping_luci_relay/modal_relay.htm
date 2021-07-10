@@ -13,7 +13,7 @@
 		print(adapter():render("cssfile"))
 		print(adapter():render("validator"))
 		print(adapter():render("widgetfile"))
-		dropdown[#dropdown+1] = string.format('"%s": "%s"', adapter():getLabel(), adapter():getLabel())
+		dropdown[#dropdown+1] = string.format('"%s": "%s"', adapter():getName(), adapter():getLabel())
 	end
 	dropdown_js = "{" .. table.concat(dropdown, ", ") .. "}"
 
@@ -50,7 +50,8 @@ function edit_relay(btn) {
 				var globals = widgetPopulation("globals", uci),
 					relay_data = uci.get("<%=config%>", relay_id),
 					embedded = relay_data["embedded"] == '1' ? true : false,
-					adapter_data = {};
+					adapter_data = {},
+					adapter_widgets = [];
 
 				var proto = new ui.DropdownProto(relay_data["proto"], <%= dropdown_js %>, { 
 					disabled: embedded,
@@ -166,19 +167,32 @@ function edit_relay(btn) {
 						' ',
 						E('div', { class: 'btn success', "name": "apply",
 							'click': ui.createHandlerFn(this, function() {
-								// TODO
-								// make a generation like this:
-								// if(relay_data["proto"] == "SNMP") adapter_snmp.saveValue()
-								// adapter_data["netping_luci_relay_adapter_snmp"] = adapter_snmp.getValue()
+								// We load all adapters' data, but only selected protocol data will pass the validation
 								<%
 									for atype, adapter in pairs(adapter_list) do
 										print(string.format('adapter_data["%s"] = %s', atype, adapter():render("getvalues")))
+										print(string.format('adapter_widgets["%s"] = %s', atype, adapter():render("getfields")))
 									end
 								%>
+
+								var widget_list = []
+								// Remove inactive adapter's data
+								for(name in adapter_data)	{
+									if(name != proto.getValue()) {
+										delete adapter_data[name]
+										delete adapter_widgets[name]
+									}
+								}
+
 								// Check all form validity
 								var widget_list = [proto, restart_time, relay_number, state_on_term, state_off_term];
+								if(adapter_widgets[proto.getValue()] != undefined) {
+									widget_list = widget_list.concat(adapter_widgets[proto.getValue()])
+								}
+
 								var form_valid = true;
 								for(var w of widget_list) {
+									w.triggerValidation()
 									if(!w.isValid()) {
 										form_valid = false
 										break;

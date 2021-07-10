@@ -96,7 +96,7 @@ L.require('ui').then(function(ui) {
 						
 						window.EventBus.register(this.node, 'bus-proto-changed', [],
 							function(ev) {
-								if(ev.detail["proto"] == self.proto) {
+								if(ev.detail["proto"] == self.config) {
 									container.classList.add("active")
 									self.isActive = true
 								} else {
@@ -119,6 +119,14 @@ L.require('ui').then(function(ui) {
 						return data;
 					},
 
+					getFields: function() {
+						var data = []
+						for (var name in this.fields) {
+							data.push(this.fields[name])
+						}
+						return data;
+					},
+
 					// if user filled in protocol at first time, then
 					// we need to prepare uci section initially
 					addSection: function() {
@@ -132,18 +140,23 @@ L.require('ui').then(function(ui) {
 
 					nearleyValidator: function(field, errormsg) {
 						return function(user_input_text) {
-							// this function is declared at "ui_adapter/"netping_luci_relay_adapter_snmp.valid.js.htm"
+							// this function is declared at "ui_adapter/"netping_luci_relay_adapter_http.valid.js.htm"
 							var gramma = netping_luci_relay_adapter_snmp_valid(field)
 							const parser = new nearley.Parser(nearley.Grammar.fromCompiled(gramma));
 							try {
-								parser.feed(user_input_text)
-								return true // it's a requirement of LuCI widget API
+								// TODO: next step of integtion is to apply triggerValidate() when whole form is submitting
+								// but don't show error while user is typing valid characters
+								var pf = parser.feed(user_input_text)
+								if (pf.results.length > 0)
+									return true // it's a requirement of LuCI widget API
+								else
+									return errormsg
 							}
 							catch (e) {
 								return errormsg
 							}
 						}
-					},
+					}
 
 				});
 

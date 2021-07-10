@@ -75,6 +75,10 @@ function http:getLabel()
 	return adapter_section:upper()
 end
 
+function http:getName()
+	return adapter_jsname
+end
+
 function http:render(optname, ...)
 	local value = http.loaded[optname]
 	local rendered = {
@@ -105,6 +109,10 @@ function http:render(optname, ...)
 
 		getvalues = function()
 			return  adapter_jsname .. ".getValue()"
+		end,
+
+		getfields = function()
+			return  adapter_jsname .. ".getFields()"
 		end,
 
 		-- All trivial options are rendered as is
