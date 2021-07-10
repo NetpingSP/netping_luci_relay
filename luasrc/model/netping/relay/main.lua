@@ -19,10 +19,8 @@ function relay:new()
 
 
 	local relay_id = uci:section(config, relay_section, nil, prototype) or log("Unable to do uci:section()", {relay_section, prototype})
-	local success = uci:commit(config) or log("Unable to uci:commit()", {config})
 	relay.loaded = prototype
 	relay.id = relay_id
-	log("Table:New()", relay.loaded)
 	return relay.loaded
 end
 
@@ -96,8 +94,6 @@ local metatable = {
 		if(id) then
 			table.id = id
 			table.loaded = uci:get_all(config, id) or table:new(id)
-		else
-			table:new()
 		end
 		return table
 	end

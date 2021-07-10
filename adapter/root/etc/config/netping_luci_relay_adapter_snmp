@@ -1,6 +1,0 @@
-
-config template 'snmp'
-	option relay '0'
-	option address '0'
-	option port '0'
-	option community '0'

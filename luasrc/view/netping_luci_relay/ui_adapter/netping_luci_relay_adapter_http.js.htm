@@ -4,42 +4,42 @@ L.require('ui').then(function(ui) {
 	L.require('dom').then(function(dom) {
 		L.require("uci").then(function(uci) {
 			uci.load("netping_luci_relay_adapter_http").then(function(out){
-				var UIAdapterHTTP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
-					__init__: function(relay_id) {
+var UIAdapterHTTP = ui.AbstractElement.extend(/** @lends LuCI.ui.Textarea.prototype */ {
+	__init__: function(relay_id) {
 
-						this.fields = {};
-						this.adapter_id = relay_id;
-						this.needsToSave = false;
-						this.isActive = false;
+		// -------------------------------------------------------
+		// Change the protocol name, config, and form fields below
+		//--------------------------------------------------------
+		this.proto = "HTTP"
+		this.config = "netping_luci_relay_adapter_http"
+		//--------------------------------------------------------
+		this.adapter_id = relay_id;
+		this.fields = {};
+		var section = this.addSection();
 
-						// -------------------------------------------------------
-						// Change the protocol name, config, and form fields below
-						//--------------------------------------------------------
-						this.proto = "HTTP"
-						this.config = "netping_luci_relay_adapter_http"
-						//--------------------------------------------------------
+		this.fields = {
 
-						var section = this.addSection();
+			"hostport": new ui.Textfield(section["hostport"], { 
+				maxlength: 128, 
+				validate: this.nearleyValidator("hostport", "Введите хост:порт, например: 192.168.0.1:85")
+			}),
 
-						this.fields = {
-							"hostport": new ui.Textfield(section["hostport"], { 
-								maxlength: 128, 
-								validate: this.nearleyValidator("hostport", "Введите хост:порт, например: 192.168.0.1:85")
-							}),
+			"login": new ui.TextFieldStyled(section["login"], { 
+				datatype: "rangelength(3,8)",
+				htmlStyle: "width: 150px"
+			}),
 
-							"login": new ui.TextFieldStyled(section["login"], { 
-								datatype: "rangelength(3,8)",
-								htmlStyle: "width: 150px"
-							}),
+			"password": new ui.TextFieldStyled(section["password"], { 
+				password: true,
+				datatype: "rangelength(4,16)",
+				htmlStyle: "width: 96px"
+			})
+		}
+		this.needsToSave = false;
+		this.isActive = false;
 
-							"password": new ui.TextFieldStyled(section["password"], { 
-								password: true,
-								datatype: "rangelength(4,16)",
-								htmlStyle: "width: 96px"
-							})
-						}
-						//--------------------------------------------------------
-					},
+		//--------------------------------------------------------
+	},
 
 					/** @override */
 					render: function() {

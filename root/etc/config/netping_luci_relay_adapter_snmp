@@ -5,13 +5,9 @@ config snmp 'template'
 	option port '0'
 	option community '0'
 
-config snmp 'cfg0a2442'
-	option community 'c'
-	option port 'd'
-	option oid 'b'
-	option address 'a'
-
 config snmp 'cfg062442'
-
-config snmp 'cfg092442'
+	option port '61'
+	option oid '0.1.3.6.1.4.1.25728.5500.5.1.1.88'
+	option address '122.230.40.12'
+	option community 'helloworld'
 
