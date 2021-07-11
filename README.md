@@ -2,8 +2,6 @@
 
 OpenWrt LuCI page for relay management.
 
-![me](https://github.com/Netping/netping_luci_relay/blob/v4/control/screenshot_animated.gif)
-
 ## Структура файлов
 
 Структура файлов формируется в соответствие с [Web интерфейс - структура файлов - рекомендации](https://netping.atlassian.net/wiki/spaces/PROJ/pages/2728821288/Web+-+LuCI)
