@@ -62,9 +62,9 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
 Примечание: Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
 
-## Инструкция по тестированию
+## Screencast demo
 
-Not yet.
+[Adapter installation from .ipk file](https://youtu.be/koNoIzhc9DE)
 
 ## ToDo
 
