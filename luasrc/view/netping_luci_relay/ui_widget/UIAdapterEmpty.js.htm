@@ -34,6 +34,7 @@ L.require('ui').then(function(ui) {
 				// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
 				window.EventBus.register(this.node, 'bus-proto-changed', [],
 					function(ev) {
+						console.log(ev.detail["proto"])
 						var protoSelected = (ev.detail["proto"] != '0' && ev.detail["proto"] != undefined && ev.detail["proto"] != null && ev.detail["proto"] != "") 
 						if(!protoSelected) {
 							container.classList.add("active")

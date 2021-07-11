@@ -80,7 +80,6 @@ L.require('ui').then(function(ui) {
 
 						// Cusom override:
 						// We subscribe EventBus event which is emitted by "DropdownProto" widget (see ui_override)
-						
 						window.EventBus.register(this.node, 'bus-proto-changed', [],
 							function(ev) {
 								if(ev.detail["proto"] == self.config) {
@@ -131,8 +130,6 @@ L.require('ui').then(function(ui) {
 							var gramma = netping_luci_relay_adapter_http_valid(field)
 							const parser = new nearley.Parser(nearley.Grammar.fromCompiled(gramma));
 							try {
-								// TODO: next step of integtion is to apply triggerValidate() when whole form is submitting
-								// but don't show error while user is typing valid characters
 								var pf = parser.feed(user_input_text)
 								if (pf.results.length > 0)
 									return true // it's a requirement of LuCI widget API
