@@ -64,7 +64,7 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
 ## Screencast demo
 
-[Adapter installation from .ipk file](https://youtu.be/koNoIzhc9DE)
+[Adapter installation from .ipk file](https://youtu.be/Qj2uZqPfCm4)
 
 ## ToDo
 
