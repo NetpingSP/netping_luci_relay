@@ -6,28 +6,35 @@ OpenWrt LuCI page for relay management.
 
 ## Структура файлов
 
-Данный модуль, начиная с ветки v5, приведён в соответствие с [Web интерфейс - структура файлов - рекомендации](https://netping.atlassian.net/wiki/spaces/PROJ/pages/2728821288/Web+-+LuCI)
+Структура файлов формируется в соответствие с [Web интерфейс - структура файлов - рекомендации](https://netping.atlassian.net/wiki/spaces/PROJ/pages/2728821288/Web+-+LuCI)
+
+Начиная с версии 0.0.3 имеется возможность расширения данной функциональности за счёт адаптеров протокола. Типовой код адаптера и инструкции даны в отдельном репозитарии: [Netping HTTP adapter](https://github.com/antoncom/netping_luci_relay_adapter_http)
 
 ```bash
-.
 ├── control
 ├── luasrc
 │   ├── controller
 │   │   └── netping_luci_relay
 │   ├── model
-│   │   └── cbi
-│   │       └── netping_luci_relay
+│   │   ├── cbi
+│   │   │   └── netping_luci_relay
+│   │   └── netping
+│   │       └── relay
+│   │           └── adapter
 │   └── view
 │       └── netping_luci_relay
-│           ├── ui_overrides
-│           ├── ui_utils
-│           └── ui_widgets
+│           ├── ui_adapter
+│           ├── ui_override
+│           ├── ui_util
+│           ├── ui_validator
+│           └── ui_widget
 └── root
     ├── etc
     │   ├── config
     │   └── netping_luci_relay
     │       └── template
     │           └── default
+    ├── tmp
     ├── usr
     │   └── lib
     │       └── lua
@@ -41,49 +48,23 @@ OpenWrt LuCI page for relay management.
                     ├── fonts
                     ├── icons
                     ├── jquery
+                    ├── nearley
                     ├── rslider
                     └── utils
+
 ```
 
-## Инструкция по установке ВАРИАНТ №1
+## Инструкция по установке
 
 1. Взять готовый IPK-файл со страницы [релизов](https://github.com/Netping/netping_luci_relay/releases)
-2. Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
-3. Скопировать на устройство и установить командой:
+2. Скопировать на устройство и установить командой:
 opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
-## Инструкция по установке ВАРИАНТ №2
+Примечание: Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
 
-1. Скопировать файлы из папки **/luasrc** в соответствующие подпапки устройства **/usr/lib/lua/luci**
-2. Скопировать файлы из /root в соответствующие подпапки устройства
-3. Установить дополнительные пакеты при помощи следующих команд:
-* opkg update
-* (v.0.0.1): opkg install luci-compat lua-ev luasocket luabitop
-* (v.0.0.2): opkg install luci-compat
+## Инструкция по тестированию
 
-## Инструкция по тестированию Websocket (только для версии 0.0.1)
-
-Вебсокет настроен на порт 8082. Чтобы отредактировать порт отредактируйте файлы:
-* /usr/lib/lua/luci/netping/websocket_relay.lua
-* /usr/lib/lua/luci/view/netping_luci_relay/relay_websocket.js.htm
-
-![me](https://github.com/Netping/netping_luci_relay/blob/v5/control/v.0.0.1/wsport_lua.png)
-![me](https://github.com/Netping/netping_luci_relay/blob/v5/control/v.0.0.1/wsport_js.png)
-
-1. git clone https://github.com/Netping/netping_luci_relay.git
-2. cd ./netping_luci_relay
-3. make install
-4. ssh openwrt
-5. $ lua /usr/lib/lua/luci/netping/websocket_relay.lua
-6. Open browser URL: http://192.168.0.24/cgi-bin/luci/admin/system/relay
-7. Play with "state" of relay using the command:
-```$ uci set netping_luci_relay.cfg042442.state=1```
-
-[Screencast](https://www.youtube.com/watch?v=FQKr_YZB6S0)
-
-## Инструкция по тестированию (только для версии 0.0.2)
-
-[Screencast v.0.0.2](https://youtu.be/IH48thITyRk)
+[Screencast v.0.0.3](https://youtu.be/IH48thITyRk)
 
 ## ToDo
 
@@ -92,3 +73,4 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 3. XHR() is deprecated. Use L.request instead. See TODO in /usr/lib/lua/luci/view/netping_luci_relay/relay.js.htm
 4. ~~Websocket - finalize code (NOT DONE AS IT'S ONLY ACTUAL FOR OLD VERSION: 0.0.1)~~
 5. JSON-RPC requests for UBUS
+6. Метод валидации Nearley позволят проверять промежуточные значения, водимые пользователем и выдаёт ошибку только если введён символ не соответствующей описанной грамматике. Но сейчас для быстроты интегарции это отключено, т.е. сообщение об ошибке выдаётся при вводе любого символа до тех пор пока значение поля не введено полностью.
