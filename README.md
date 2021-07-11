@@ -64,7 +64,7 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
 ## Инструкция по тестированию
 
-[Screencast v.0.0.3](https://youtu.be/IH48thITyRk)
+Not yet.
 
 ## ToDo
 
