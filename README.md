@@ -60,6 +60,7 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 
 Примечание: Если необходимо скомпилировать под другую архитектуру, то подготовить IPK-файл, воспользовавшись данной методикой: [Выпуск версии модуля LuCI в виде .ipk файла](https://netping.atlassian.net/wiki/spaces/PROJ/pages/3194945556/LuCI+.ipk)
 
+
 ## Screencast demo
 
 [Adapter installation from .ipk file](https://youtu.be/Qj2uZqPfCm4)
@@ -71,4 +72,4 @@ opkg update && opkg install netping_luci_relay_0.0.1-1_all.ipk --force-reinstall
 3. XHR() is deprecated. Use L.request instead. See TODO in /usr/lib/lua/luci/view/netping_luci_relay/relay.js.htm
 4. ~~Websocket - finalize code (NOT DONE AS IT'S ONLY ACTUAL FOR OLD VERSION: 0.0.1)~~
 5. JSON-RPC requests for UBUS
-6. Метод валидации Nearley позволят проверять промежуточные значения, водимые пользователем и выдаёт ошибку только если введён символ не соответствующей описанной грамматике. Но сейчас для быстроты интегарции это отключено, т.е. сообщение об ошибке выдаётся при вводе любого символа до тех пор пока значение поля не введено полностью.
+6. Метод валидации Nearley позволят проверять промежуточные значения, вводимые пользователем, и выдаёт ошибку, только если введён символ, не соответствующей описанной грамматике. Но сейчас для быстроты интегарции это отключено, т.е. сообщение об ошибке выдаётся при вводе любого символа, до тех пор пока значение поля не введено полностью.
