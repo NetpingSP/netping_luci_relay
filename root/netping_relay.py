@@ -16,13 +16,16 @@ def ubus_init():
     def get_state_callback(event, data):
         sect = data['section']
         logger.debug('CALL get_state (%s)', sect)
-        res = ubus.call("uci", "get", {"config":"netping_luci_relay","section":sect,"option":"state"})
+        state = ubus.call("uci", "get", {"config":"netping_luci_relay","section":sect,"option":"state"})
         name = ubus.call("uci", "get", {"config":"netping_luci_relay","section":sect,"option":"name"})
-        logger.debug('res = %s', res)
+        logger.debug('state = %s', state)
         logger.debug('name = %s', name)
-        val_res = res[0]['value']
+        val_state = state[0]['value']
         val_name = name[0]['value']
         print('Button pressed for "%s"' % val_name)
+        ret_val = {}
+        ret_val["state"] = int(val_state)
+        event.reply(ret_val)
 
     ubus.add(
         'netping_relay', {
