@@ -27,6 +27,16 @@ def ubus_init():
         ret_val["state"] = int(val_state)
         event.reply(ret_val)
 
+    def get_status_callback(event, data):
+        sect = data['section']
+        logger.debug('CALL get_status (%s)', sect)
+        status = ubus.call("uci", "get", {"config":"netping_luci_relay","section":sect,"option":"status"})
+        logger.debug('status= %s', status)
+        val_status = status[0]['value']
+        ret_val = {}
+        ret_val["status"] = int(val_status)
+        event.reply(ret_val)
+
     ubus.add(
         'netping_relay', {
             'get_state': {
@@ -35,6 +45,12 @@ def ubus_init():
                     'section': ubus.BLOBMSG_TYPE_STRING,
                 }
             },
+            'get_status': {
+                'method': get_status_callback,
+                'signature': {
+                    'section': ubus.BLOBMSG_TYPE_STRING,
+                }
+            }
         }
     )
 
