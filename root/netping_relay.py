@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import random
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('netping_relay')
@@ -25,6 +26,7 @@ def ubus_init():
         print('Button pressed for "%s"' % val_name)
         ret_val = {}
         ret_val["state"] = int(val_state)
+        ret_val["state"] = random.randint(0,1)
         event.reply(ret_val)
 
     def set_state_callback(event, data):
@@ -42,6 +44,7 @@ def ubus_init():
         val_status = status[0]['value']
         ret_val = {}
         ret_val["status"] = int(val_status)
+        ret_val["status"] = random.randint(0,2)
         event.reply(ret_val)
 
     def set_status_callback(event, data):
