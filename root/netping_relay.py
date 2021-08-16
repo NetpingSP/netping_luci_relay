@@ -3,6 +3,8 @@
 import sys
 import logging
 import random
+from pysnmp.entity.rfc3413.oneliner import cmdgen
+from pysnmp.proto import rfc1902
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('netping_relay')
@@ -87,6 +89,53 @@ def ubus_init():
 
 
 if __name__ == '__main__':
+
+    snmpget = cmdgen.CommandGenerator()
+    try:
+        errorIndication, errorStatus, errorIndex, varBinds = snmpget.getCmd(
+            cmdgen.CommunityData('SWITCH', mpModel=0),
+            cmdgen.UdpTransportTarget(('125.227.188.172', 31132), timeout=5, retries=0),
+            ".1.3.6.1.4.1.25728.5500.5.1.2.1"
+        )
+        if errorIndication:
+            print("STOP WITH ERROR: {}".format(errorIndication))
+        elif errorStatus:
+            print("STOP with {0} at {1}".format(errorStatus.prettyPrint(),
+                                                errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+        else:
+            result = ''
+            for varBind in varBinds:
+                result += str(varBind)
+            print("getCmd ", result)
+#        time.sleep(self.period)
+    except (OSError, RuntimeError) as e:
+        print("STOP WITH ERROR: {}".format(e))
+
+    try:
+        errorIndication, errorStatus, errorIndex, varBinds = snmpget.setCmd(
+            cmdgen.CommunityData('SWITCH', mpModel=0),
+            cmdgen.UdpTransportTarget(('125.227.188.172', 31132), timeout=5, retries=0),
+            ('.1.3.6.1.4.1.25728.5500.5.1.2.1', rfc1902.Integer(0))
+        )
+        if errorIndication:
+            print("STOP WITH ERROR: {}".format(errorIndication))
+        elif errorStatus:
+            print("STOP with {0} at {1}".format(errorStatus.prettyPrint(),
+                                                errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+        else:
+            result = ''
+            for varBind in varBinds:
+                result += str(varBind)
+            print("setCmd ", result)
+    #        time.sleep(self.period)
+    except (OSError, RuntimeError) as e:
+        print("STOP WITH ERROR: {}".format(e))
+
+
+    exit(0)
+
+
+
 
     if not ubus.connect("/var/run/ubus.sock"):
         sys.stderr.write('Failed connect to ubus\n')
