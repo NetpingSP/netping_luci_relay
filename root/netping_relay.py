@@ -5,6 +5,9 @@ import logging
 import random
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+import time
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('netping_relay')
@@ -87,8 +90,26 @@ def ubus_init():
         }
     )
 
+class Handler(FileSystemEventHandler):
+    def on_modified(self, event):
+        if type(event) == FileModifiedEvent:
+            print("File modified!!!")
+            print(event.src_path)
 
 if __name__ == '__main__':
+
+    observer = Observer()
+    observer.schedule(Handler(), path='/etc/config/netping_luci_relay_adapter_snmp', recursive=False)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+    exit(0)
 
     snmpget = cmdgen.CommandGenerator()
     try:
