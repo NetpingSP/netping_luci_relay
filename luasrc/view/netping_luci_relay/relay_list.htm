@@ -41,8 +41,8 @@
 		<div class="tr table-titles">
 			<div class="th" style="width: 100%;">Памятка</div>
 			<div class="th">Тип</div>
-			<div class="th">Состояние</div>
-			<div class="th">Статус</div>
+			<div class="th state" style="width: 120px; display: block; height: 40px;">Состояние</div>
+			<div class="th status" style="width: 80px;">Статус</div>
 			<div class="th center nowrap cbi-section-actions">Управление</div>
 		</div>
 		<% for k, v in util.kspairs(relays) do %>
@@ -62,7 +62,7 @@
 				<div class="td <%=k%> state" data-title="Состояние" data-relay="<%=k%>">
 					<%= relay(k):render("state") %>
 				</div>
-				<div class="td" data-title="Статус">
+				<div class="td <%=k%> status" data-title="Статус">
 					<%= relay(k):render("status") %>
 				</div>
 				<div class="nowrap cbi-section-actions td">
