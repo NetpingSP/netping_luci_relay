@@ -13,7 +13,7 @@ local adapter_list = require "luci.model.netping.relay.adapter_list"
 
 
 function notify_backend(action, relay_id, payload)
-	util.ubus("netping_relay", "refresh", {action = action, relay_id = relay_id, payload = payload})
+	util.ubus("netping_relay", "review_ui_action", { action = action, relay_id = relay_id, payload = payload })
 end
 
 
@@ -24,7 +24,6 @@ function index()
 		entry({"admin", "system", "alerts"}, cbi("netping_luci_relay/alert"), nil).leaf = true
 		entry({"admin", "system", "alerts", "action"}, call("do_action"), nil).leaf = true
 		entry({"admin", "system", "relay", "indication"}, call("get_indication"), nil).leaf = true
-
 	end
 end
 
