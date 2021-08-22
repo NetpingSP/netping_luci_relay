@@ -15,6 +15,8 @@ except ImportError:
     logger.error('Failed import ubus.')
     sys.exit(-1)
 
+curr_relays = {}
+
 def ubus_init():
     def get_state_callback(event, data):
         sect = data['section']
@@ -87,8 +89,32 @@ def ubus_init():
         }
     )
 
+def parseconfig():
+    curr_relays.clear()
+    confvalues = ubus.call("uci", "get", {"config": "netping_luci_relay"})
+    for confdict in list(confvalues[0]['values'].values()):
+        if confdict['.type'] == "relay":
+            if confdict['proto'] == "netping_luci_relay_adapter_snmp":
+                conf_proto = ubus.call("uci", "get", {"config": confdict['proto']})
+                for protodict in list(conf_proto[0]['values'].values()):
+                    if protodict['.name'] == confdict['.name']:
+                        protodict['status'] = confdict['status']
+                        protodict['state'] = confdict['state']
+                        curr_relays[protodict['.name']] = protodict
 
 if __name__ == '__main__':
+
+    if not ubus.connect("/var/run/ubus.sock"):
+        sys.stderr.write('Failed connect to ubus\n')
+        sys.exit(-1)
+
+    parseconfig()
+
+
+
+
+
+
 
     snmpget = cmdgen.CommandGenerator()
     try:
@@ -136,10 +162,6 @@ if __name__ == '__main__':
 
 
 
-
-    if not ubus.connect("/var/run/ubus.sock"):
-        sys.stderr.write('Failed connect to ubus\n')
-        sys.exit(-1)
 
     ubus_init()
 
