@@ -5,6 +5,8 @@ import logging
 import random
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
+import threading
+import time
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger('netping_relay')
@@ -102,6 +104,55 @@ def parseconfig():
                         protodict['state'] = confdict['state']
                         curr_relays[protodict['.name']] = protodict
 
+class SNMPThread(threading.Thread):
+    def __init__(self, pollID, address, port, oid, period, community, timeout):
+        threading.Thread.__init__(self)
+        self.ID = pollID
+        self.address = address
+        self.port = int(port)
+        self.period = float(period)
+        self.oid = oid
+        self.community = community
+        self.timeout = float(timeout)
+        self._stoped = False
+
+    def stop(self):
+        self._stoped = True
+
+#    def checkthread(self, pollURL, oid, period, community, timeout):
+#        if pollURL == self.url and oid == self.oid and float(period) == self.period and \
+#                community == self.community and timeout == self.timeout:
+#            return True
+#        else:
+#            return False
+
+    def run(self):
+        while not self._stoped:
+            try:
+                snmpget = cmdgen.CommandGenerator()
+                errorIndication, errorStatus, errorIndex, varBinds = snmpget.getCmd(
+                    cmdgen.CommunityData(self.community, mpModel=0),
+                    cmdgen.UdpTransportTarget((self.address, self.port), timeout=self.timeout, retries=0),
+                    self.oid
+                )
+                if errorIndication:
+                    print("STOP {0} WITH ERROR: {1}".format(self.ID, errorIndication))
+                    break
+                elif errorStatus:
+                    print("STOP {0} with {1} at {2}".format(self.ID, errorStatus.prettyPrint(),
+                                                            errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+                    break
+                else:
+                    result = ''
+                    for varBind in varBinds:
+                        result += str(varBind)
+                    config_relay = curr_relays[self.ID]
+                    config_relay['state'] = result.split('= ')[1]
+                time.sleep(self.period)
+            except (OSError, RuntimeError) as e:
+                print("STOP {0} WITH ERROR: {1}".format(self.ID, e))
+                break
+
 if __name__ == '__main__':
 
     if not ubus.connect("/var/run/ubus.sock"):
@@ -110,33 +161,34 @@ if __name__ == '__main__':
 
     parseconfig()
 
+    for relay, config in curr_relays.items():
+        snmpthread = SNMPThread(config['.name'], config['address'], config['port'], config['oid'],
+                                config['period'], config['community'], config['timeout'])
+        snmpthread.start()
+        config['thread'] = snmpthread
+        curr_relays[relay] = config
 
+    print("Start while(true)")
+    while True:
+        time.sleep(3)
 
+        # print("MAIN stop SNMPThread")
+        # print(curr_relays)
+        # for relay, config in curr_relays.items():
+        #     th = config['thread']
+        #     th.stop()
+        #
+        # th.join()
+        # curr_relays.pop('cfg0a2442')
+        # print('OOOOOOOOOOOOOOOOOOOOOOOOOOOOO')
+        # print(curr_relays)
+        #
+        # exit(0)
 
 
 
 
     snmpget = cmdgen.CommandGenerator()
-    try:
-        errorIndication, errorStatus, errorIndex, varBinds = snmpget.getCmd(
-            cmdgen.CommunityData('SWITCH', mpModel=0),
-            cmdgen.UdpTransportTarget(('125.227.188.172', 31132), timeout=5, retries=0),
-            ".1.3.6.1.4.1.25728.5500.5.1.2.1"
-        )
-        if errorIndication:
-            print("STOP WITH ERROR: {}".format(errorIndication))
-        elif errorStatus:
-            print("STOP with {0} at {1}".format(errorStatus.prettyPrint(),
-                                                errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-        else:
-            result = ''
-            for varBind in varBinds:
-                result += str(varBind)
-            print("getCmd ", result)
-#        time.sleep(self.period)
-    except (OSError, RuntimeError) as e:
-        print("STOP WITH ERROR: {}".format(e))
-
     try:
         errorIndication, errorStatus, errorIndex, varBinds = snmpget.setCmd(
             cmdgen.CommunityData('SWITCH', mpModel=0),
