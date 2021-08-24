@@ -35,13 +35,11 @@ def ubus_init():
         ubus.call("uci", "commit", {"config":"netping_luci_relay"})
 
     def get_status_callback(event, data):
-        sect = data['section']
-        logger.debug('CALL get_status (%s)', sect)
-        status = ubus.call("uci", "get", {"config":"netping_luci_relay","section":sect,"option":"status"})
-        logger.debug('status= %s', status)
-        val_status = status[0]['value']
         ret_val = {}
-        ret_val["status"] = int(val_status)
+        sect = data['section']
+        relay_dict = curr_relays[sect]
+        logger.debug('CALL get_status (%s) = %s', sect, relay_dict['status'])
+        ret_val["status"] = int(relay_dict['status'])
         event.reply(ret_val)
 
     def set_status_callback(event, data):
