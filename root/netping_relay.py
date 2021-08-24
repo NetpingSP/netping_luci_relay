@@ -102,7 +102,11 @@ class SNMPThread(threading.Thread):
 #            return False
 
     def run(self):
+        status_norma = '0'
+        status_no_connection = '1'
+        status_error = '3'
         while not self._stoped:
+            config_relay = curr_relays[self.ID]
             try:
                 snmpget = cmdgen.CommandGenerator()
                 errorIndication, errorStatus, errorIndex, varBinds = snmpget.getCmd(
@@ -111,21 +115,21 @@ class SNMPThread(threading.Thread):
                     self.oid
                 )
                 if errorIndication:
-                    print("STOP {0} WITH ERROR: {1}".format(self.ID, errorIndication))
-                    break
+                    config_relay['status'] = status_no_connection
+                    logger.debug("errorIndication: {0} WITH ERROR: {1}".format(self.ID, errorIndication))
                 elif errorStatus:
-                    print("STOP {0} with {1} at {2}".format(self.ID, errorStatus.prettyPrint(),
+                    config_relay['status'] = status_error
+                    logger.debug("errorStatus: {0} with {1} at {2}".format(self.ID, errorStatus.prettyPrint(),
                                                             errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-                    break
                 else:
                     result = ''
                     for varBind in varBinds:
                         result += str(varBind)
-                    config_relay = curr_relays[self.ID]
                     config_relay['state'] = result.split('= ')[1]
+                    config_relay['status'] = status_norma
                 time.sleep(self.period)
             except (OSError, RuntimeError) as e:
-                print("STOP {0} WITH ERROR: {1}".format(self.ID, e))
+                logger.debug("STOP {0} WITH ERROR: {1}".format(self.ID, e))
                 break
 
 if __name__ == '__main__':
