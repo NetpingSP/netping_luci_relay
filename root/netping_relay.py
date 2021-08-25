@@ -92,6 +92,19 @@ def ubus_init():
         }
     )
 
+def check_param_relay(param):
+    try:
+        address = param['address']
+        port = param['port']
+        oid = param['oid']
+        period = param['period']
+        community = param['community']
+        timeout = param['timeout']
+    except KeyError:
+        return False
+
+    return True
+
 def parseconfig():
     curr_relays.clear()
     try:
@@ -110,6 +123,9 @@ def parseconfig():
                     sys.exit(-1)
 
                 for protodict in list(conf_proto[0]['values'].values()):
+                    if not check_param_relay(protodict):
+                        continue
+
                     if protodict['.name'] == confdict['.name']:
                         protodict['status'] = confdict['status']
                         protodict['state'] = confdict['state']
@@ -129,6 +145,9 @@ def reparseconfig(event, data):
 
         # Add & edit relay
         for protodict in list(conf_proto[0]['values'].values()):
+            if not check_param_relay(protodict):
+                continue
+
             config = curr_relays.get(protodict['.name'])
             if config is None:
                 # Add new relay
@@ -228,7 +247,13 @@ if __name__ == '__main__':
     ubus_init()
     parseconfig()
 
-    for relay, config in curr_relays.items():
+    relays = list(curr_relays.keys())
+    for relay in relays:
+        config = curr_relays.get(relay)
+        if not check_param_relay(config):
+            del curr_relays[relay]
+            continue
+
         snmpthread = SNMPThread(config['.name'], config['address'], config['port'], config['oid'],
                                 config['period'], config['community'], config['timeout'])
         snmpthread.start()
