@@ -192,10 +192,10 @@ class SNMPThread(threading.Thread):
             return False
 
     def run(self):
+        snmpget = cmdgen.CommandGenerator()
         while not self._stoped:
             config_relay = curr_relays[self.ID]
             try:
-                snmpget = cmdgen.CommandGenerator()
                 errorIndication, errorStatus, errorIndex, varBinds = snmpget.getCmd(
                     cmdgen.CommunityData(self.community, mpModel=0),
                     cmdgen.UdpTransportTarget((self.address, self.port), timeout=self.timeout, retries=0),
