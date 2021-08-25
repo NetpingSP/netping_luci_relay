@@ -20,6 +20,7 @@ curr_relays = {}
 status_norma = '0'
 status_no_connection = '1'
 status_error = '3'
+uci_config_snmp = "netping_luci_relay_adapter_snmp"
 
 def ubus_init():
     def get_state_callback(event, data):
@@ -91,31 +92,82 @@ def ubus_init():
         }
     )
 
-class ReParseConfig(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-
-    def reparseconfig(self, event, data):
-        print("1235")
-        print(type(data))
-        print(data)
-
-    def run(self):
-        ubus.listen(("commit", self.reparseconfig))
-        ubus.loop()
-
 def parseconfig():
     curr_relays.clear()
-    confvalues = ubus.call("uci", "get", {"config": "netping_luci_relay"})
+    try:
+        confvalues = ubus.call("uci", "get", {"config": "netping_luci_relay"})
+    except RuntimeError:
+        logger.error("RuntimeError: uci get netping_luci_relay")
+        sys.exit(-1)
+
     for confdict in list(confvalues[0]['values'].values()):
         if confdict['.type'] == "relay":
-            if confdict['proto'] == "netping_luci_relay_adapter_snmp":
-                conf_proto = ubus.call("uci", "get", {"config": confdict['proto']})
+            if confdict['proto'] == uci_config_snmp:
+                try:
+                    conf_proto = ubus.call("uci", "get", {"config": uci_config_snmp})
+                except RuntimeError:
+                    logger.error("RuntimeError: uci get {0}".format(uci_config_snmp))
+                    sys.exit(-1)
+
                 for protodict in list(conf_proto[0]['values'].values()):
                     if protodict['.name'] == confdict['.name']:
                         protodict['status'] = confdict['status']
                         protodict['state'] = confdict['state']
                         curr_relays[protodict['.name']] = protodict
+
+def reparseconfig(event, data):
+    if data['config'] == uci_config_snmp:
+        try:
+            conf_proto = ubus.call("uci", "get", {"config": uci_config_snmp})
+        except RuntimeError:
+            logger.error("RuntimeError: uci get {0}".format(uci_config_snmp))
+            for relay, config in curr_relays.items():
+                th = config['thread']
+                if th.is_alive():
+                    th.stop()
+            sys.exit(-1)
+
+        # Add & edit relay
+        for protodict in list(conf_proto[0]['values'].values()):
+            config = curr_relays.get(protodict['.name'])
+            if config is None:
+                # Add new relay
+                protodict['status'] = '0'
+                protodict['state'] = '0'
+
+            else:
+                # Edit relay
+                th = config['thread']
+                if th.is_alive():
+                    if th.checkthread(protodict['address'], protodict['port'], protodict['oid'],
+                                      protodict['period'], protodict['community'], protodict['timeout']):
+                        continue
+                    else:
+                        th.stop()
+                        th.join()
+
+            # Run polling thread on SNMP
+            snmpthread = SNMPThread(protodict['.name'], protodict['address'], protodict['port'], protodict['oid'],
+                                    protodict['period'], protodict['community'], protodict['timeout'])
+            snmpthread.start()
+            protodict['thread'] = snmpthread
+            curr_relays[protodict['.name']] = protodict
+
+        # Deleting relay
+        relays = list(curr_relays.keys())
+        for relay in relays:
+            relay_exists = False
+            for protodict in list(conf_proto[0]['values'].values()):
+                if protodict['.name'] == relay:
+                    relay_exists = True
+                    break
+
+            if relay_exists == False:
+                config = curr_relays.get(relay)
+                th = config['thread']
+                if th.is_alive():
+                    th.stop()
+                del curr_relays[relay]
 
 class SNMPThread(threading.Thread):
     def __init__(self, pollID, address, port, oid, period, community, timeout):
@@ -132,12 +184,12 @@ class SNMPThread(threading.Thread):
     def stop(self):
         self._stoped = True
 
-#    def checkthread(self, pollURL, oid, period, community, timeout):
-#        if pollURL == self.url and oid == self.oid and float(period) == self.period and \
-#                community == self.community and timeout == self.timeout:
-#            return True
-#        else:
-#            return False
+    def checkthread(self, address, port, oid, period, community, timeout):
+        if address == self.address and int(port) == self.port and oid == self.oid and float(period) == self.period and \
+                community == self.community and float(timeout) == self.timeout:
+            return True
+        else:
+            return False
 
     def run(self):
         while not self._stoped:
@@ -182,15 +234,16 @@ if __name__ == '__main__':
         snmpthread.start()
         config['thread'] = snmpthread
 
-    # Создание потока приема и обработки события изменения uci файла
-    reparseconfig = ReParseConfig()
-    reparseconfig.daemon = True
-    reparseconfig.start()
+    ubus.listen(("commit", reparseconfig))
 
     try:
         while True:
             ubus.loop(1)
     except KeyboardInterrupt:
         print("__main__ === KeyboardInterrupt")
+        for relay, config in curr_relays.items():
+            th = config['thread']
+            if th.is_alive():
+                th.stop()
 
     ubus.disconnect()
