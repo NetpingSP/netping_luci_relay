@@ -17,6 +17,9 @@ except ImportError:
     sys.exit(-1)
 
 curr_relays = {}
+status_norma = '0'
+status_no_connection = '1'
+status_error = '3'
 
 def ubus_init():
     def get_state_callback(event, data):
@@ -31,8 +34,30 @@ def ubus_init():
         sect = data['section']
         state = data['state']
         logger.debug('CALL set_state (%s) state=%s', sect, state)
-        ubus.call("uci", "set", {"config":"netping_luci_relay","section":sect,"values":{"state":state}})
-        ubus.call("uci", "commit", {"config":"netping_luci_relay"})
+        config_relay = curr_relays[sect]
+
+        try:
+            snmpget = cmdgen.CommandGenerator()
+            errorIndication, errorStatus, errorIndex, varBinds = snmpget.setCmd(
+                cmdgen.CommunityData(config_relay['community'], mpModel=0),
+                cmdgen.UdpTransportTarget((config_relay['address'], int(config_relay['port'])),
+                                          timeout=float(config_relay['timeout']), retries=0),
+                (config_relay['oid'], rfc1902.Integer(int(state)))
+            )
+            if errorIndication:
+                config_relay['status'] = status_no_connection
+                logger.debug("errorIndication: {0} WITH ERROR: {1}".format(config_relay['.name'], errorIndication))
+            elif errorStatus:
+                config_relay['status'] = status_error
+                logger.debug("errorStatus: {0} with {1} at {2}".format(config_relay['.name'], errorStatus.prettyPrint(),
+                                                                       errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+            else:
+                result = ''
+                for varBind in varBinds:
+                    result += str(varBind)
+                config_relay['status'] = status_norma
+        except (OSError, RuntimeError) as e:
+            logger.debug("STOP {0} WITH ERROR: {1}".format(config_relay['.name'], e))
 
     def get_status_callback(event, data):
         ret_val = {}
@@ -102,9 +127,6 @@ class SNMPThread(threading.Thread):
 #            return False
 
     def run(self):
-        status_norma = '0'
-        status_no_connection = '1'
-        status_error = '3'
         while not self._stoped:
             config_relay = curr_relays[self.ID]
             try:
@@ -138,6 +160,7 @@ if __name__ == '__main__':
         sys.stderr.write('Failed connect to ubus\n')
         sys.exit(-1)
 
+    ubus_init()
     parseconfig()
 
     for relay, config in curr_relays.items():
@@ -145,56 +168,6 @@ if __name__ == '__main__':
                                 config['period'], config['community'], config['timeout'])
         snmpthread.start()
         config['thread'] = snmpthread
-        curr_relays[relay] = config
-
-    print("Start while(true)")
-    while True:
-        time.sleep(3)
-
-        # print("MAIN stop SNMPThread")
-        # print(curr_relays)
-        # for relay, config in curr_relays.items():
-        #     th = config['thread']
-        #     th.stop()
-        #
-        # th.join()
-        # curr_relays.pop('cfg0a2442')
-        # print('OOOOOOOOOOOOOOOOOOOOOOOOOOOOO')
-        # print(curr_relays)
-        #
-        # exit(0)
-
-
-
-
-    snmpget = cmdgen.CommandGenerator()
-    try:
-        errorIndication, errorStatus, errorIndex, varBinds = snmpget.setCmd(
-            cmdgen.CommunityData('SWITCH', mpModel=0),
-            cmdgen.UdpTransportTarget(('125.227.188.172', 31132), timeout=5, retries=0),
-            ('.1.3.6.1.4.1.25728.5500.5.1.2.1', rfc1902.Integer(0))
-        )
-        if errorIndication:
-            print("STOP WITH ERROR: {}".format(errorIndication))
-        elif errorStatus:
-            print("STOP with {0} at {1}".format(errorStatus.prettyPrint(),
-                                                errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-        else:
-            result = ''
-            for varBind in varBinds:
-                result += str(varBind)
-            print("setCmd ", result)
-    #        time.sleep(self.period)
-    except (OSError, RuntimeError) as e:
-        print("STOP WITH ERROR: {}".format(e))
-
-
-    exit(0)
-
-
-
-
-    ubus_init()
 
     try:
         while True:
@@ -203,4 +176,3 @@ if __name__ == '__main__':
         print("__main__ === KeyboardInterrupt")
 
     ubus.disconnect()
-
