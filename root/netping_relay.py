@@ -91,6 +91,19 @@ def ubus_init():
         }
     )
 
+class ReParseConfig(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def reparseconfig(self, event, data):
+        print("1235")
+        print(type(data))
+        print(data)
+
+    def run(self):
+        ubus.listen(("commit", self.reparseconfig))
+        ubus.loop()
+
 def parseconfig():
     curr_relays.clear()
     confvalues = ubus.call("uci", "get", {"config": "netping_luci_relay"})
@@ -168,6 +181,11 @@ if __name__ == '__main__':
                                 config['period'], config['community'], config['timeout'])
         snmpthread.start()
         config['thread'] = snmpthread
+
+    # Создание потока приема и обработки события изменения uci файла
+    reparseconfig = ReParseConfig()
+    reparseconfig.daemon = True
+    reparseconfig.start()
 
     try:
         while True:
