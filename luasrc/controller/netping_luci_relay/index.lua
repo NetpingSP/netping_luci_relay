@@ -11,9 +11,12 @@ local socket = require 'socket'
 local relay = require "luci.model.netping.relay.main"
 local adapter_list = require "luci.model.netping.relay.adapter_list"
 
+local sys = require "luci.sys"
 
-function notify_backend(action, relay_id, payload)
-	util.ubus("netping_relay", "refresh", {action = action, relay_id = relay_id, payload = payload})
+
+function notify_backend_on_commit(config_name)
+	--sys.exec(string.format("ubus send commit '{\"config\":\"%s\"}", config_name))
+	util.ubus(config_name, "send", {config = config_name})
 end
 
 
@@ -24,7 +27,6 @@ function index()
 		entry({"admin", "system", "alerts"}, cbi("netping_luci_relay/alert"), nil).leaf = true
 		entry({"admin", "system", "alerts", "action"}, call("do_action"), nil).leaf = true
 		entry({"admin", "system", "relay", "indication"}, call("get_indication"), nil).leaf = true
-
 	end
 end
 
@@ -49,14 +51,14 @@ function get_indication() --[[
 
 			-- Get statuses of all relays
 			
-			ubus_response = util.ubus("netping_relay", "get_status", {section = string.format("@relay[%s]", relay[".index"])})
+			ubus_response = util.ubus("netping_relay", "get_status", {section = string.format("%s", relay[".name"])})
 			if(ubus_response and type(ubus_response) == "table" and ubus_response["status"]) then
 				relay_indication.status[relay[".name"]] = ubus_response["status"]
 			end
 
 			-- Get states of all relays
 
-			ubus_response = util.ubus("netping_relay", "get_state", {section = string.format("@relay[%s]", relay[".index"])})
+			ubus_response = util.ubus("netping_relay", "get_state", {section = string.format("%s", relay[".name"])})
 			if(ubus_response and type(ubus_response) == "table" and ubus_response["state"]) then
 				relay_indication.state[relay[".name"]] = ubus_response["state"]
 			end
@@ -152,7 +154,7 @@ function do_relay_action(action, relay_id)
 	if commands[action] then
 		commands[action](relay_id, payload)
 		commands["default"]()
-		notify_backend(action, relay_id, util.serialize_json(payload))
+		notify_backend_on_commit("netping_relay")
 	end
 end
 
