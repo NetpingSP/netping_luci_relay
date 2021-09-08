@@ -32,9 +32,9 @@ L.require('ui').then(function(ui) {
 								validate: this.nearleyValidator("oid", "Введите OID, напр.: .1.23.54.3.546.")
 							}),
 
-							"port": new ui.Textfield(section["port"], { 
-								datatype: "rangelength(2,5)",
-								htmlStyle: "width: 50px"
+							"port": new ui.TextFieldStyled(section["port"], { 
+								datatype: "port",
+								htmlStyle: "width: 60px"
 							}),
 
 							"community": new ui.TextFieldStyled(section["community"], { 
@@ -43,14 +43,17 @@ L.require('ui').then(function(ui) {
 							}),
 
 							"period": new ui.TextFieldStyled(section["period"], { 
-								datatype: "rangelength(1,5)",
-								htmlStyle: "width: 96px"
+								htmlStyle: "width: 80px",
+								datatype: "rangelength(1,7)",
+								validate: this.nearleyValidator("period", "Секунды, милисекунды: от 0.001 до 999.999")
 							}),
 
 							"timeout": new ui.TextFieldStyled(section["timeout"], { 
-								datatype: "rangelength(1,5)",
-								htmlStyle: "width: 96px"
-							})
+								htmlStyle: "width: 80px",
+								datatype: "rangelength(1,7)",
+								validate: this.nearleyValidator("timeout", "Секунды, милисекунды: от 0.001 до 999.999")
+							}),
+
 
 						}
 						//---------------------------------------------------------
@@ -88,7 +91,9 @@ L.require('ui').then(function(ui) {
 									this.fields['port'].render()
 								])
 							]),
-							E('div', {class: 'tr cbi-rowstyle-1'}, [
+							// Add new fields html-markup here
+							//
+							E('div', {class: 'tr cbi-rowstyle-2'}, [
 								E('div', {class: 'td'}, "Период, сек."),
 								E('div', {class: 'td', style: "text-align: right;"}, [
 									this.fields['period'].render()
@@ -100,6 +105,7 @@ L.require('ui').then(function(ui) {
 									this.fields['timeout'].render()
 								])
 							]),
+
 						])
 						
 						return this.bind(container);
