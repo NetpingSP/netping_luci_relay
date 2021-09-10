@@ -36,6 +36,17 @@ L.require('ui').then(function(ui) {
 								password: true,
 								datatype: "rangelength(4,16)",
 								htmlStyle: "width: 96px"
+							}),
+							"period": new ui.TextFieldStyled(section["period"], { 
+								datatype: "rangelength(1,7)",
+								htmlStyle: "width: 96px",
+								validate: this.nearleyValidator("period", "Cекунды.милисекунды, от 0.001 до 999.999")
+							}),
+
+							"timeout": new ui.TextFieldStyled(section["timeout"], { 
+								datatype: "rangelength(1,7)",
+								htmlStyle: "width: 96px",
+								validate: this.nearleyValidator("timeout", "Cекунды.милисекунды, от 0.001 до 999.999")
 							})
 						}
 						//--------------------------------------------------------
@@ -66,7 +77,22 @@ L.require('ui').then(function(ui) {
 								E('div', {class: 'td', style: "text-align: right;"}, [
 									this.fields['password'].render()
 								])
-							])
+							]),
+
+							E('div', {class: 'tr cbi-rowstyle-1'}, [
+								E('div', {class: 'td'}, "Период, сек."),
+								E('div', {class: 'td', style: "text-align: right;"}, [
+									this.fields['period'].render()
+								])
+							]),
+							E('div', {class: 'tr cbi-rowstyle-1'}, [
+								E('div', {class: 'td'}, "Таймаут, сек."),
+								E('div', {class: 'td', style: "text-align: right;"}, [
+									this.fields['timeout'].render()
+								])
+							]),
+							// Add new fields html-markup here
+							//
 						])
 						return this.bind(container);
 					},
