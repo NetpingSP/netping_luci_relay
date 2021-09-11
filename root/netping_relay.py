@@ -26,7 +26,11 @@ def ubus_init():
     def get_state_callback(event, data):
         ret_val = {}
         sect = data['section']
-        relay_dict = curr_relays[sect]
+        try:
+            relay_dict = curr_relays[sect]
+        except KeyError:
+            return
+
         logger.debug('CALL get_state (%s) = %s', sect, relay_dict['state'])
         ret_val["state"] = int(relay_dict['state'])
         event.reply(ret_val)
@@ -63,7 +67,11 @@ def ubus_init():
     def get_status_callback(event, data):
         ret_val = {}
         sect = data['section']
-        relay_dict = curr_relays[sect]
+        try:
+            relay_dict = curr_relays[sect]
+        except KeyError:
+            return
+
         logger.debug('CALL get_status (%s) = %s', sect, relay_dict['status'])
         ret_val["status"] = int(relay_dict['status'])
         event.reply(ret_val)
