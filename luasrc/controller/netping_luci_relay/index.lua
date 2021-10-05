@@ -6,6 +6,8 @@ local uci = require "luci.model.uci".cursor()
 local util = require "luci.util"
 local log = require "luci.model.netping.log"
 
+require "ubus"
+
 local socket = require 'socket'
 
 local relay = require "luci.model.netping.relay.main"
@@ -15,8 +17,14 @@ local sys = require "luci.sys"
 
 
 function notify_backend_on_commit(config_name)
-	--sys.exec(string.format("ubus send commit '{\"config\":\"%s\"}", config_name))
-	util.ubus(config_name, "send", {config = config_name})
+	-- sys.exec(string.format("ubus send testcommit '{\"config\":\"%s\"}", config_name))
+	-- util.ubus(config_name, "send commit", {config = config_name})
+	local conn = ubus.connect()
+	if not conn then
+		error("Failed to connect to ubus")
+	end
+	conn:send("commit", { config = config_name})
+	conn:close()
 end
 
 
@@ -72,7 +80,6 @@ function get_indication() --[[
 end
 
 function do_relay_action(action, relay_id)
-
 	local payload = {}
 	payload["relay_data"] = luci.jsonc.parse(luci.http.formvalue("relay_data"))
 	for _, k in pairs({".name", ".anonymous", ".type", ".index"}) do payload["relay_data"][k] = nil end
@@ -103,6 +110,7 @@ function do_relay_action(action, relay_id)
 			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
 			relay(relay_id):set("state", new_state)
+			-- util.ubus("netping_relay", "set_state", {section = string.format("%s", relay[".name"]), state = new_state})
 		end,
 		edit = function(relay_id, payloads)
 			-- apply relay settings
