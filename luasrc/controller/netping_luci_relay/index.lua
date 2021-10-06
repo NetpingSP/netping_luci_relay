@@ -110,7 +110,7 @@ function do_relay_action(action, relay_id)
 			local old_state = tonumber(uci:get(config, relay_id, "state"))
 			local new_state = (old_state + 1) % 2
 			relay(relay_id):set("state", new_state)
-			-- util.ubus("netping_relay", "set_state", {section = string.format("%s", relay[".name"]), state = new_state})
+			util.ubus("netping_relay", "set_state", {section = string.format("%s", relay[".name"]), state = string.format("%s", new_state)})
 		end,
 		edit = function(relay_id, payloads)
 			-- apply relay settings
